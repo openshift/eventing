@@ -15,7 +15,6 @@ function run_demo(){
   oc adm policy add-scc-to-user privileged -z default -n myproject
 
   apply build/000-rolebinding.yaml
-  apply eventing/000-rolebinding.yaml
   
   apply build/010-build-template.yaml
   apply serving/010-service.yaml
@@ -26,18 +25,9 @@ function run_demo(){
   local port=$(oc get svc knative-ingressgateway -n istio-system -o 'jsonpath={.spec.ports[?(@.port==80)].nodePort}')
   
   # Check that the helloworld app can server requests
+  curl -H "Host: helloworld-openshift.myproject.example.com" "http://${ip}/health" || return 1
+
   curl -H "Host: helloworld-openshift.myproject.example.com" "http://${ip}:${port}/health" || return 1
-
-  apply eventing/010-channel.yaml
-  apply eventing/020-k8s-event-source.yaml
-  apply eventing/030-subscription.yaml
-
-  wait_for_all_pods myproject  
-  
-  kubectl run busybox --image=busybox --restart=Never -- sh
-
-  # Check that events arrive at the application
-  wait_for_logged_events
 }
 
 function apply(){
