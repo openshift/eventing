@@ -23,10 +23,9 @@ function run_demo(){
   wait_for_all_pods myproject    
 
   local ip=$(oc get svc knative-ingressgateway -n istio-system -o 'jsonpath={.status.loadBalancer.ingress[0].ip}')
-  local port=$(oc get svc knative-ingressgateway -n istio-system -o 'jsonpath={.spec.ports[?(@.port==80)].nodePort}')
   
   # Check that the helloworld app can server requests
-  curl -H "Host: helloworld-openshift.myproject.example.com" "http://${ip}:${port}/health" || return 1
+  curl -H "Host: helloworld-openshift.myproject.example.com" "http://${ip}/health" || return 1
 
   apply eventing/010-channel.yaml
   apply eventing/020-k8s-event-source.yaml
@@ -62,7 +61,7 @@ function wait_for_all_pods {
 
 function wait_for_logged_events(){
   POD=$(oc get pods | grep helloworld-openshift-00001-deployment | awk '{ print $1 }')
-  timeout 300 "oc logs $POD -c user-container | grep -E \"Ce-Source: .*pods/busybox\""
+  timeout 300 "! oc logs $POD -c user-container | grep -E \"Ce-Source: .*pods/busybox\""
 }
 
 function timeout() {
