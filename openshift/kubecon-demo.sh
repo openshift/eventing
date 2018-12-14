@@ -65,6 +65,6 @@ function timeout() {
   SECONDS=0; TIMEOUT=$1; shift
   until eval $*; do
     sleep 5
-    [[ $SECONDS -gt $TIMEOUT ]] && echo "ERROR: Timed out" && exit -1
+    [[ $SECONDS -gt $TIMEOUT ]] && echo "ERROR: Timed out" && return 1
   done
 }
