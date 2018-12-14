@@ -19,19 +19,37 @@ function run_demo(){
   apply build/010-build-template.yaml
   apply serving/010-service.yaml
 
-  wait_for_all_pods myproject
+  wait_for_all_pods myproject || return 1
 
   local ip=$(oc get svc knative-ingressgateway -n istio-system -o 'jsonpath={.status.loadBalancer.ingress[0].ip}')
   
-  # Check that the helloworld app can server requests
-  curl -H "Host: helloworld-openshift.myproject.example.com" "http://${ip}/health" || return 1
+  wait_for_redhat $ip || return 1
+
+  apply serving/011-service-update.yaml
+
+  wait_for_all_pods myproject || return 1
+
+  wait_for_redhat $ip || return 1
+
+  apply serving/012-service-traffic.yaml
+
+  wait_for_all_pods myproject || return 1
+
+  wait_for_redhat $ip || return 1
+
+  apply serving/013-service-final.yaml
+
+  wait_for_dumpy_00001_to_shutdown || return 1
+
+  wait_for_redhat $ip || return 1
+
+  check_no_dumpy_00001 || return 1
 
   apply eventing/010-channel.yaml
-  apply eventing/020-egress.yaml
   apply eventing/021-source.yaml
   apply eventing/030-subscription.yaml
 
-  wait_for_all_pods myproject  
+  wait_for_all_pods myproject || return 1
 
   # Check that events arrive at the application
   wait_for_logged_events
@@ -57,8 +75,21 @@ function wait_for_all_pods {
 }
 
 function wait_for_logged_events(){
-  POD=$(oc get pods | grep helloworld-openshift-00001-deployment | awk '{ print $1 }' | awk '{ print $1 }')
+  POD=$(oc get pods | grep dumpy-00002-deployment | awk '{ print $1 }' | awk '{ print $1 }')
   timeout 300 "oc logs $POD -c user-container | grep 'Ce-Source:'"
+}
+
+function wait_for_redhat(){
+  # Check that the app can server requests
+  timeout 60 "echo \$(curl -H 'Host: dumpy.myproject.example.com' http://${1}/health) | grep 888"
+}
+
+function wait_for_dumpy_00001_to_shutdown(){
+  timeout 180 "! oc get pods | grep dumpy-00001-deployment"
+}
+
+function check_no_dumpy_00001(){
+  ! oc get pods | grep dumpy-00001-deployment
 }
 
 function timeout() {
@@ -67,4 +98,5 @@ function timeout() {
     sleep 5
     [[ $SECONDS -gt $TIMEOUT ]] && echo "ERROR: Timed out" && return 1
   done
+  return 0
 }
