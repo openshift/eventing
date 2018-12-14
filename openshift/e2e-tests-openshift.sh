@@ -256,8 +256,6 @@ function tag_built_image() {
 
 enable_admission_webhooks
 
-teardown
-
 install_istio
 
 enable_docker_schema2
@@ -280,6 +278,10 @@ run_e2e_tests || failed=1
 
 run_demo || failed=1
 
-(( failed )) && fail_test
+(( failed )) && dump_cluster_state
+
+teardown
+
+(( failed )) && exit 1
 
 success
