@@ -3,7 +3,7 @@
 CGO_ENABLED=0
 GOOS=linux
 CORE_IMAGES=./cmd/controller/ ./cmd/webhook/ ./pkg/provisioners/kafka ./cmd/fanoutsidecar
-TEST_IMAGES=./test/test_images/k8sevents
+TEST_IMAGES=$(shell find ./test/test_images -mindepth 1 -maxdepth 1 -type d)
 
 install:
 	go install $(CORE_IMAGES)
@@ -11,7 +11,9 @@ install:
 .PHONY: install
 
 test-install:
-	go install $(TEST_IMAGES)
+	for img in $(TEST_IMAGES); do \
+		go install $$img ; \
+	done
 .PHONY: test-install
 
 test-e2e:

@@ -18,8 +18,7 @@ readonly OPENSHIFT_REGISTRY="${OPENSHIFT_REGISTRY:-"registry.svc.ci.openshift.or
 readonly SSH_PRIVATE_KEY="${SSH_PRIVATE_KEY:-"~/.ssh/google_compute_engine"}"
 readonly INSECURE="${INSECURE:-"false"}"
 readonly EVENTING_NAMESPACE=knative-eventing
-readonly TEST_NAMESPACE=e2etest
-readonly TEST_FUNCTION_NAMESPACE=e2etestfn3
+readonly TEST_NAMESPACE=e2etest-knative-eventing
 
 env
 
@@ -145,16 +144,9 @@ function install_in_memory_channel_provisioner(){
 function create_test_resources() {
   echo ">> Ensuring pods in test namespaces can access test images"
   oc policy add-role-to-group system:image-puller system:serviceaccounts:$TEST_NAMESPACE --namespace=$EVENTING_NAMESPACE
-  oc policy add-role-to-group system:image-puller system:serviceaccounts:$TEST_FUNCTION_NAMESPACE --namespace=$EVENTING_NAMESPACE
 
   echo ">> Creating imagestream tags for all test images"
   tag_test_images test/test_images
-
-  #Grant additional privileges
-  oc adm policy add-scc-to-user anyuid -z default -n $TEST_FUNCTION_NAMESPACE
-  oc adm policy add-scc-to-user privileged -z default -n $TEST_FUNCTION_NAMESPACE
-  oc adm policy add-scc-to-user anyuid -z e2e-receive-adapter -n $TEST_FUNCTION_NAMESPACE
-  oc adm policy add-scc-to-user privileged -z e2e-receive-adapter -n $TEST_FUNCTION_NAMESPACE
 }
 
 function resolve_resources(){
@@ -185,8 +177,6 @@ function enable_docker_schema2(){
 function create_test_namespace(){
   oc new-project $TEST_NAMESPACE
   oc adm policy add-scc-to-user privileged -z default -n $TEST_NAMESPACE
-  oc new-project $TEST_FUNCTION_NAMESPACE
-  oc adm policy add-scc-to-user privileged -z default -n $TEST_FUNCTION_NAMESPACE
 }
 
 function run_e2e_tests(){
@@ -217,9 +207,6 @@ function delete_test_namespace(){
   echo ">> Deleting test namespace $TEST_NAMESPACE"
   oc adm policy remove-scc-from-user privileged -z default -n $TEST_NAMESPACE
   oc delete project $TEST_NAMESPACE
-  echo ">> Deleting test namespace $TEST_FUNCTION_NAMESPACE"
-  oc adm policy remove-scc-from-user privileged -z default -n $TEST_FUNCTION_NAMESPACE
-  oc delete project $TEST_FUNCTION_NAMESPACE
 }
 
 function delete_knative_eventing_sources(){
