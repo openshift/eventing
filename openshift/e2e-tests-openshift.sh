@@ -322,6 +322,19 @@ function tag_built_image() {
   oc tag --insecure=${INSECURE} -n ${EVENTING_NAMESPACE} ${OPENSHIFT_REGISTRY}/${OPENSHIFT_BUILD_NAMESPACE}/stable:${remote_name} ${local_name}:latest
 }
 
+function run_origin_e2e() {
+  curl -L https://github.com/openshift/origin/tarball/master > origin.tar.gz
+  tar xvzf origin.tar.gz
+  cd $(find . -mindepth 1 -maxdepth 1 -name openshift-origin-*)
+
+  # Build tests
+  make build WHAT=cmd/openshift-tests
+
+  # Run tests
+  _output/local/bin/linux/amd64/openshift-tests run all \
+  -o /tmp/artifacts/e2e-origin.log --junit-dir /tmp/artifacts/junit
+} 
+
 failed=0
 
 (( !failed )) && install_istio || failed=1
@@ -335,6 +348,8 @@ failed=0
 (( !failed )) && install_knative_eventing_sources || failed=1
 
 (( !failed )) && install_in_memory_channel_provisioner || failed=1
+
+(( !failed )) && run_origin_e2e || failed=1
 
 (( !failed )) && create_test_namespace
 
