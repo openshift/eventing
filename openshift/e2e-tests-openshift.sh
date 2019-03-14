@@ -323,16 +323,23 @@ function tag_built_image() {
 }
 
 function run_origin_e2e() {
-  curl -L https://github.com/openshift/origin/tarball/master > origin.tar.gz
-  tar xvzf origin.tar.gz
-  cd $(find . -mindepth 1 -maxdepth 1 -name openshift-origin-*)
+  local param_file=e2e-origin-params.txt
+  (
+    echo "NAMESPACE=knative-eventing"
+    echo "IMAGE_TESTS=registry.svc.ci.openshift.org/openshift/origin-v4.0:tests"
+    echo "TEST_COMMAND=TEST_SUITE=openshift/conformance/parallel run-tests"
+  ) > $param_file
+  
+  oc -n knative-eventing create configmap kubeconfig --from-file=kubeconfig=$KUBECONFIG
+  oc new-app -f ./openshift/e2e-origin-template.yaml --param-file=$param_file
+  
+  # Wait for the e2e-origin test Pod to produce configmap with results
+  timeout 3600 "oc get configmap e2e-origin-junit"
 
-  # Build tests
-  make build WHAT=cmd/openshift-tests
+  oc get configmap e2e-origin-logs -o=jsonpath='{.data.e2e-origin-logs}' > /tmp/artifacts/e2e-origin.log
 
-  # Run tests
-  _output/local/bin/linux/amd64/openshift-tests run all \
-  -o /tmp/artifacts/e2e-origin.log --junit-dir /tmp/artifacts/junit
+  mkdir -p /tmp/artifacts/junit
+  oc get configmap e2e-origin-junit -o=jsonpath='{.data.e2e-origin-junit}' > /tmp/artifacts/junit/junit_e2e-origin.xml
 } 
 
 failed=0
