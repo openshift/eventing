@@ -334,9 +334,13 @@ function run_origin_e2e() {
   oc -n knative-eventing new-app -f ./openshift/e2e-origin-job.yaml --param-file=$param_file
   
   # Wait for the e2e-origin test job to finish
-  timeout 3600 "oc -n knative-eventing describe job/e2e-origin-testsuite | grep '0 Running'"
+  timeout 3600 "oc -n knative-eventing describe job/e2e-origin-testsuite | grep -E '(1 Succeeded|1 Failed)'"
 
-  oc -n knative-eventing logs job/e2e-origin-testsuite | tar xvf - -C /tmp/artifacts
+  oc get pods -n knative-eventing | grep e2e-origin-testsuite
+
+  e2e_origin_pod=$(oc get pods -n knative-eventing | grep e2e-origin-testsuite | grep Completed | awk '{print $1}')
+
+  oc -n knative-eventing logs $e2e_origin_pod > /tmp/artifacts/e2e-origin-testsuite.log
 } 
 
 failed=0

@@ -50,6 +50,8 @@ objects:
           - -c
           - |
             #!/bin/bash
+            set -x
+
             set -euo pipefail
 
             export PATH=/usr/libexec/origin:$PATH
