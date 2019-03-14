@@ -14,7 +14,6 @@ parameters:
 
 objects:
 
-# The e2e pod spins up a cluster, runs e2e tests, and then cleans up the cluster.
 - kind: Pod
   apiVersion: v1
   metadata:
@@ -66,7 +65,6 @@ objects:
         mkdir -p /tmp/artifacts/e2e-origin
         
         function run-tests() {
-          sleep 60 #wait so that we can mount volumes
           openshift-tests run "${TEST_SUITE}" \
             --provider "${TEST_PROVIDER:-}" -o /tmp/artifacts/e2e-origin/e2e-origin.log --junit-dir /tmp/artifacts/e2e-origin/junit
           

@@ -331,7 +331,7 @@ function run_origin_e2e() {
   ) > $param_file
   
   oc -n knative-eventing create configmap kubeconfig --from-file=kubeconfig=$KUBECONFIG
-  oc new-app -f ./openshift/e2e-origin-template.yaml --param-file=$param_file
+  oc -n knative-eventing new-app -f ./openshift/e2e-origin-template.yaml --param-file=$param_file
   
   # Wait for the e2e-origin test Pod to produce configmap with results
   timeout 3600 "oc get configmap e2e-origin-junit"
