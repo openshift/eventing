@@ -331,15 +331,12 @@ function run_origin_e2e() {
   ) > $param_file
   
   oc -n knative-eventing create configmap kubeconfig --from-file=kubeconfig=$KUBECONFIG
-  oc -n knative-eventing new-app -f ./openshift/e2e-origin-template.yaml --param-file=$param_file
+  oc -n knative-eventing new-app -f ./openshift/e2e-origin-job.yaml --param-file=$param_file
   
-  # Wait for the e2e-origin test Pod to produce configmap with results
-  timeout 3600 "oc get configmap e2e-origin-junit"
+  # Wait for the e2e-origin test job to finish
+  timeout 3600 "oc -n knative-eventing describe job/e2e-origin-testsuite | grep '0 Running'"
 
-  oc get configmap e2e-origin-logs -o=jsonpath='{.data.e2e-origin-logs}' > /tmp/artifacts/e2e-origin.log
-
-  mkdir -p /tmp/artifacts/junit
-  oc get configmap e2e-origin-junit -o=jsonpath='{.data.e2e-origin-junit}' > /tmp/artifacts/junit/junit_e2e-origin.xml
+  oc -n knative-eventing logs job/e2e-origin-testsuite | tar xvf - -C /tmp/artifacts
 } 
 
 failed=0
