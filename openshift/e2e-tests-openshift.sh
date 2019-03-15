@@ -345,27 +345,27 @@ function run_origin_e2e() {
 
 failed=0
 
-(( !failed )) && install_istio || failed=1
+# (( !failed )) && install_istio || failed=1
 
-(( !failed )) && install_knative_build || failed=1
+# (( !failed )) && install_knative_build || failed=1
 
-(( !failed )) && install_knative_serving || failed=1
+# (( !failed )) && install_knative_serving || failed=1
 
-(( !failed )) && install_knative_eventing || failed=1
+# (( !failed )) && install_knative_eventing || failed=1
 
-(( !failed )) && install_knative_eventing_sources || failed=1
+# (( !failed )) && install_knative_eventing_sources || failed=1
 
-(( !failed )) && install_in_memory_channel_provisioner || failed=1
+# (( !failed )) && install_in_memory_channel_provisioner || failed=1
 
 (( !failed )) && run_origin_e2e || failed=1
 
-(( !failed )) && create_test_namespace
+# (( !failed )) && create_test_namespace
 
-(( !failed )) && create_test_resources
+# (( !failed )) && create_test_resources
 
-(( !failed )) && run_e2e_tests || failed=1
+# (( !failed )) && run_e2e_tests || failed=1
 
-(( !failed )) && run_demo || failed=1
+# (( !failed )) && run_demo || failed=1
 
 (( failed )) && dump_cluster_state
 
