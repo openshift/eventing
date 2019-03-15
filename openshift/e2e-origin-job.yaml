@@ -70,7 +70,9 @@ objects:
             function run-tests() {
               openshift-tests run "${TEST_SUITE}" \
                 --provider "${TEST_PROVIDER:-}" -o /tmp/artifacts/e2e-origin/e2e-origin.log \
-                --junit-dir /tmp/artifacts/e2e-origin/junit 2>&1 > /dev/null
+                --junit-dir /tmp/artifacts/e2e-origin/junit
+              
+              echo $?
               
               junit_file=$(find /tmp/artifacts/e2e-origin -name "junit_e2e_*.xml")
               tar -cvf test_logs.tar /tmp/artifacts/e2e-origin/e2e-origin.log $junit_file
