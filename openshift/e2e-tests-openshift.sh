@@ -357,8 +357,6 @@ failed=0
 
 (( !failed )) && install_in_memory_channel_provisioner || failed=1
 
-oc new-project knative-eventing
-
 (( !failed )) && run_origin_e2e || failed=1
 
 (( !failed )) && create_test_namespace
