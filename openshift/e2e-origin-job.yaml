@@ -53,7 +53,7 @@ objects:
             #!/bin/bash
             set -x
 
-            set -euo pipefail
+            set -uo pipefail
 
             export PATH=/usr/libexec/origin:$PATH
 
@@ -71,8 +71,6 @@ objects:
               openshift-tests run "${TEST_SUITE}" \
                 --provider "${TEST_PROVIDER:-}" -o /tmp/artifacts/e2e-origin/e2e-origin.log \
                 --junit-dir /tmp/artifacts/e2e-origin/junit
-              
-              echo $?
               
               junit_file=$(find /tmp/artifacts/e2e-origin -name "junit_e2e_*.xml")
               tar -cvf test_logs.tar /tmp/artifacts/e2e-origin/e2e-origin.log $junit_file
