@@ -338,7 +338,7 @@ function run_origin_e2e() {
 
   oc get pods -n knative-eventing | grep e2e-origin-testsuite
 
-  e2e_origin_pod=$(oc get pods -n knative-eventing | grep e2e-origin-testsuite | grep -E '(Completed|Error)' | awk '{print $1}')
+  e2e_origin_pod=$(oc get pods -n knative-eventing | grep e2e-origin-testsuite | grep -E '(Completed|Error|Terminating)' | awk '{print $1}')
 
   oc -n knative-eventing logs $e2e_origin_pod -c test > /tmp/artifacts/e2e-origin-testsuite.log
 } 
