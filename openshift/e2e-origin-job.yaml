@@ -73,9 +73,9 @@ objects:
                 --junit-dir /tmp/artifacts/e2e-origin/junit
               
               junit_file=$(find /tmp/artifacts/e2e-origin -name "junit_e2e_*.xml")
-              tar -cvf test_logs.tar /tmp/artifacts/e2e-origin/e2e-origin.log $junit_file
+              tar -cvf /tmp/artifacts/e2e-origin/test_logs.tar /tmp/artifacts/e2e-origin/e2e-origin.log $junit_file
 
-              cat test_logs.tar  #print this to stdout, will be consumed by the controller pod
+              cat /tmp/artifacts/e2e-origin/test_logs.tar  #print this to stdout, will be consumed by the controller pod
 
               exit 0
             }
