@@ -48,30 +48,23 @@ var forwardPrefixes = []string{
 }
 
 // Message represents an chunk of data within a channel dispatcher. The message contains both
-// a map of string headers and a binary payload.
+// a map of string headers and a binary payload. This struct gets mashaled/unmarshaled in order to
+// preserve and pass Header information to the event subscriber.
 //
 // A message may represent a CloudEvent.
 type Message struct {
 	// Headers provide metadata about the message payload. All header keys
 	// should be lowercase.
-	Headers map[string]string
+	Headers map[string]string `json:"headers,omitempty"`
 
 	// Payload is the raw binary content of the message. The payload format is
 	// often described by the 'content-type' header.
-	Payload []byte
+	Payload []byte `json:"payload,omitempty"`
 }
 
 // ErrUnknownChannel is returned when a message is received by a channel dispatcher for a
 // channel that does not exist.
 var ErrUnknownChannel = errors.New("unknown channel")
-
-func headerSet(headers []string) map[string]bool {
-	set := make(map[string]bool)
-	for _, header := range headers {
-		set[header] = true
-	}
-	return set
-}
 
 // History returns the list of hosts where the message has been into
 func (m *Message) History() []string {
