@@ -77,6 +77,8 @@ objects:
 
               cat /tmp/artifacts/e2e-origin/test_logs.tar  #print this to stdout, will be consumed by the controller pod
 
+              echo -e "\n"
+
               exit 0
             }
 

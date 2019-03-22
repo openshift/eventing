@@ -341,6 +341,11 @@ function run_origin_e2e() {
   e2e_origin_pod=$(oc get pods -n knative-eventing | grep e2e-origin-testsuite | grep -E '(Completed|Error|Terminating)' | awk '{print $1}')
 
   oc -n knative-eventing logs $e2e_origin_pod -c test > /tmp/artifacts/e2e-origin-testsuite.log
+
+  # parse tar file with container logs and junit files and extract it
+  oc -n knative-eventing logs $e2e_origin_pod -c test | \
+  awk '/cat \/tmp\/artifacts\/e2e-origin\/test_logs\.tar/,EOF' | \
+  tail -n +2 | head -n -1 | tar xvf -
 }
 
 function scale_up_workers(){
