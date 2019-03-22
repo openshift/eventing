@@ -341,9 +341,40 @@ function run_origin_e2e() {
   e2e_origin_pod=$(oc get pods -n knative-eventing | grep e2e-origin-testsuite | grep -E '(Completed|Error|Terminating)' | awk '{print $1}')
 
   oc -n knative-eventing logs $e2e_origin_pod -c test > /tmp/artifacts/e2e-origin-testsuite.log
-} 
+}
+
+function scale_up_workers(){
+  local cluster_api_ns="openshift-machine-api"
+  # Get the name of the first machineset that has at least 1 replica
+  local machineset=$(oc get machineset -n ${cluster_api_ns} -o custom-columns="name:{.metadata.name},replicas:{.spec.replicas}" -l machine.openshift.io/cluster-api-machine-type=worker | grep " 1" | head -n 1 | awk '{print $1}')
+  # Bump the number of replicas to 6 (+ 1 + 1 == 8 workers)
+  oc patch machineset -n ${cluster_api_ns} ${machineset} -p '{"spec":{"replicas":6}}' --type=merge
+  wait_until_machineset_scales_up ${cluster_api_ns} ${machineset} 6
+}
+
+# Waits until the machineset in the given namespaces scales up to the
+# desired number of replicas
+# Parameters: $1 - namespace
+#             $2 - machineset name
+#             $3 - desired number of replicas
+function wait_until_machineset_scales_up() {
+  echo -n "Waiting until machineset $2 in namespace $1 scales up to $3 replicas"
+  for i in {1..150}; do  # timeout after 15 minutes
+    local available=$(oc get machineset -n $1 $2 -o jsonpath="{.status.availableReplicas}")
+    if [[ ${available} -eq $3 ]]; then
+      echo -e "\nMachineSet $2 in namespace $1 successfully scaled up to $3 replicas"
+      return 0
+    fi
+    echo -n "."
+    sleep 6
+  done
+  echo - "\n\nError: timeout waiting for machineset $2 in namespace $1 to scale up to $3 replicas"
+  return 1
+}
 
 failed=0
+
+scale_up_workers || exit 1
 
 (( !failed )) && install_istio || failed=1
 
