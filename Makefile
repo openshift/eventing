@@ -2,12 +2,12 @@
 
 CGO_ENABLED=0
 GOOS=linux
-CORE_IMAGES=./cmd/controller/ ./cmd/webhook/ ./pkg/provisioners/kafka ./cmd/fanoutsidecar
+CORE_IMAGES=./cmd/controller/ ./cmd/webhook/ ./cmd/sendevent/ ./contrib/kafka ./cmd/fanoutsidecar
 TEST_IMAGES=$(shell find ./test/test_images -mindepth 1 -maxdepth 1 -type d)
 
 install:
 	go install $(CORE_IMAGES)
-	go build -o $(GOPATH)/bin/in-memory-channel-controller ./pkg/controller/eventing/inmemory/controller
+	go build -o $(GOPATH)/bin/in-memory-channel-controller ./pkg/controller/provisioners/controller
 .PHONY: install
 
 test-install:

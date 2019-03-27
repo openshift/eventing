@@ -7,7 +7,8 @@ set -x
 # Using the most recent good release of eventing-sources to unblock tests. This
 # should be replaced with the commented line below when eventing-sources nightly
 # is known good again.
-readonly KNATIVE_EVENTING_SOURCES_RELEASE=https://knative-nightly.storage.googleapis.com/eventing-sources/previous/v20181205-fbac942/release.yaml
+readonly KNATIVE_EVENTING_SOURCES_RELEASE=https://github.com/knative/eventing-sources/releases/download/v0.4.1/release.yaml
+#readonly KNATIVE_EVENTING_SOURCES_RELEASE=https://knative-nightly.storage.googleapis.com/eventing-sources/previous/v20181205-fbac942/release.yaml
 #readonly KNATIVE_EVENTING_SOURCES_RELEASE=https://knative-nightly.storage.googleapis.com/eventing-sources/latest/release.yaml
 
 readonly K8S_CLUSTER_OVERRIDE=$(oc config current-context | awk -F'/' '{print $2}')
@@ -92,12 +93,12 @@ function install_knative_serving(){
   echo ">>> Setting SSL_CERT_FILE for Knative Serving Controller"
   oc set env -n knative-serving deployment/controller SSL_CERT_FILE=/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt
 
-  echo ">> Patching knative-ingressgateway"
-  oc patch hpa -n istio-system knative-ingressgateway --patch '{"spec": {"maxReplicas": 1}}'
+  echo ">> Patching istio-ingressgateway"
+  oc patch hpa -n istio-system istio-ingressgateway --patch '{"spec": {"maxReplicas": 1}}'
 
   wait_until_pods_running knative-build || return 1
   wait_until_pods_running knative-serving || return 1
-  wait_until_service_has_external_ip istio-system knative-ingressgateway || fail_test "Ingress has no external IP"
+  wait_until_service_has_external_ip istio-system istio-ingressgateway || fail_test "Ingress has no external IP"
   header "Knative Installed successfully"
 }
 
@@ -278,3 +279,4 @@ teardown
 (( failed )) && exit 1
 
 success
+
