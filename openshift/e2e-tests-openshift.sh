@@ -9,6 +9,8 @@ readonly SERVING_VERSION=v0.4.1
 readonly EVENTING_SOURCES_VERSION=v0.4.1
 readonly MAISTRA_VERSION="0.6"
 
+
+readonly MAISTRA_RELEASE=https://raw.githubusercontent.com/Maistra/openshift-ansible/maistra-${MAISTRA_VERSION}/istio/istio_community_operator_template.yaml
 readonly BUILD_RELEASE=https://github.com/knative/build/releases/download/${BUILD_VERSION}/build.yaml
 readonly SERVING_RELEASE=https://github.com/knative/serving/releases/download/${SERVING_VERSION}/serving.yaml
 readonly EVENTING_SOURCES_RELEASE=https://github.com/knative/eventing-sources/releases/download/${EVENTING_SOURCES_VERSION}/release.yaml
@@ -27,7 +29,7 @@ readonly TEST_FUNCTION_NAMESPACE=e2etestfn3
 env
 
 # Loops until duration (car) is exceeded or command (cdr) returns non-zero
-function timeout() {
+function timeout_non_zero() {
   SECONDS=0; TIMEOUT=$1; shift
   while eval $*; do
     sleep 5
@@ -56,7 +58,7 @@ function install_istio(){
 
   # Install the Maistra Operator
   oc create namespace istio-operator
-  oc process -f https://raw.githubusercontent.com/Maistra/openshift-ansible/maistra-${MAISTRA_VERSION}/istio/istio_community_operator_template.yaml | oc create -f -
+  oc process -f $MAISTRA_RELEASE | oc create -f -
 
   # Wait until the Operator pod is up and running
   wait_until_pods_running istio-operator || return 1
@@ -77,7 +79,7 @@ EOF
   # Wait until at least the istio installer job is running
   wait_until_pods_running istio-system || return 1
 
-  timeout 900 'oc get pods -n istio-system && [[ $(oc get pods -n istio-system | grep openshift-ansible-istio-installer | grep -c Completed) -eq 0 ]]' || return 1
+  timeout_non_zero 900 'oc get pods -n istio-system && [[ $(oc get pods -n istio-system | grep openshift-ansible-istio-installer | grep -c Completed) -eq 0 ]]' || return 1
 
   # Scale down unused services deployed by the istio operator. The
   # jaeger pods will fail anyway due to the elasticsearch pod failing
@@ -207,17 +209,6 @@ function resolve_resources(){
   done
 }
 
-function resolve_serving_resources(){
-  local dir=$1
-  local resolved_file_name=$2
-  > $resolved_file_name
-  for yaml in $(find $dir -maxdepth 1 -name "*.yaml"); do
-    echo "---" >> $resolved_file_name
-    sed -e 's/\(.* image: \)\(github.com\)\(.*\/\)\(.*\)/\1 '"$OPENSHIFT_REGISTRY"'\/'"openshift"'\/'"knative-v${SERVING_VERSION}:knative-serving-\4"'/' \
-        -e 's/\(.* queueSidecarImage: \)\(github.com\)\(.*\/\)\(.*\)/\1 '"$OPENSHIFT_REGISTRY"'\/'"openshift"'\/'"knative-v${SERVING_VERSION}:knative-serving-\4"'/' $yaml >> $resolved_file_name
-  done
-}
-
 function create_test_namespace(){
   oc new-project $TEST_NAMESPACE
   oc adm policy add-scc-to-user privileged -z default -n $TEST_NAMESPACE
@@ -252,8 +243,10 @@ function run_e2e_tests(){
 
 function delete_istio_openshift(){
   echo ">> Bringing down Istio"
-  oc delete --ignore-not-found=true -f $ISTIO_RELEASE
-  oc delete --ignore-not-found=true -f $ISTIO_CRD_RELEASE
+  oc delete -n istio-operator installation istio-installation
+  oc process -f istio_community_operator_template.yaml | oc delete --ignore-not-found=true -f -
+
+  # oc process -f $MAISTRA_RELEASE | oc delete --ignore-not-found=true -f -
 }
 
 function delete_serving_openshift() {
@@ -291,11 +284,10 @@ function delete_in_memory_channel_provisioner(){
 }
 
 function teardown() {
-  delete_demo
   delete_test_namespace
   delete_in_memory_channel_provisioner
-  delete_knative_eventing
   delete_knative_eventing_sources
+  delete_knative_eventing
   delete_serving_openshift
   delete_build_openshift
   delete_istio_openshift
