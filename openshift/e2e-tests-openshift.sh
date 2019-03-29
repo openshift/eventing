@@ -1,7 +1,7 @@
 #!/bin/sh 
 
 source $(dirname $0)/../vendor/github.com/knative/test-infra/scripts/e2e-tests.sh
-source $(dirname $0)/kubecon-demo.sh
+source $(dirname $0)/kubecon-demo.sh 
 
 set -x
 
