@@ -4,107 +4,133 @@ source $(dirname $0)/../vendor/github.com/knative/test-infra/scripts/e2e-tests.s
 
 set -x
 
-# Using the most recent good release of eventing-sources to unblock tests. This
-# should be replaced with the commented line below when eventing-sources nightly
-# is known good again.
-readonly KNATIVE_EVENTING_SOURCES_RELEASE=https://knative-nightly.storage.googleapis.com/eventing-sources/previous/v20181205-fbac942/release.yaml
-#readonly KNATIVE_EVENTING_SOURCES_RELEASE=https://knative-nightly.storage.googleapis.com/eventing-sources/latest/release.yaml
+readonly BUILD_VERSION=v0.4.0
+readonly SERVING_VERSION=v0.4.1
+readonly EVENTING_SOURCES_VERSION=v0.4.1
+readonly MAISTRA_VERSION="0.6"
+
+
+readonly MAISTRA_RELEASE=https://raw.githubusercontent.com/Maistra/openshift-ansible/maistra-${MAISTRA_VERSION}/istio/istio_community_operator_template.yaml
+readonly BUILD_RELEASE=https://github.com/knative/build/releases/download/${BUILD_VERSION}/build.yaml
+readonly SERVING_RELEASE=https://github.com/knative/serving/releases/download/${SERVING_VERSION}/serving.yaml
+readonly EVENTING_SOURCES_RELEASE=https://github.com/knative/eventing-sources/releases/download/${EVENTING_SOURCES_VERSION}/release.yaml
 
 readonly K8S_CLUSTER_OVERRIDE=$(oc config current-context | awk -F'/' '{print $2}')
 readonly API_SERVER=$(oc config view --minify | grep server | awk -F'//' '{print $2}' | awk -F':' '{print $1}')
-readonly INTERNAL_REGISTRY="docker-registry.default.svc:5000"
+readonly INTERNAL_REGISTRY="${INTERNAL_REGISTRY:-"docker-registry.default.svc:5000"}"
 readonly USER=$KUBE_SSH_USER #satisfy e2e_flags.go#initializeFlags()
 readonly OPENSHIFT_REGISTRY="${OPENSHIFT_REGISTRY:-"registry.svc.ci.openshift.org"}"
-readonly SSH_PRIVATE_KEY="${SSH_PRIVATE_KEY:-"~/.ssh/google_compute_engine"}"
 readonly INSECURE="${INSECURE:-"false"}"
+readonly SERVING_NAMESPACE=knative-serving
 readonly EVENTING_NAMESPACE=knative-eventing
-readonly TEST_NAMESPACE=e2etest-knative-eventing
+readonly TEST_NAMESPACE=e2etest
+readonly TEST_FUNCTION_NAMESPACE=e2etestfn3
 
 env
 
-function enable_admission_webhooks(){
-  header "Enabling admission webhooks"
-  add_current_user_to_etc_passwd
-  disable_strict_host_checking
-  echo "API_SERVER=$API_SERVER"
-  echo "KUBE_SSH_USER=$KUBE_SSH_USER"
-  chmod 600 ~/.ssh/google_compute_engine
-  echo "$API_SERVER ansible_ssh_private_key_file=${SSH_PRIVATE_KEY}" > inventory.ini
-  ansible-playbook ${REPO_ROOT_DIR}/openshift/admission-webhooks.yaml -i inventory.ini -u $KUBE_SSH_USER
-  rm inventory.ini
+# Loops until duration (car) is exceeded or command (cdr) returns non-zero
+function timeout_non_zero() {
+  SECONDS=0; TIMEOUT=$1; shift
+  while eval $*; do
+    sleep 5
+    [[ $SECONDS -gt $TIMEOUT ]] && echo "ERROR: Timed out" && return 1
+  done
+  return 0
 }
 
-function add_current_user_to_etc_passwd(){
-  if ! whoami &>/dev/null; then
-    echo "${USER:-default}:x:$(id -u):$(id -g):Default User:$HOME:/sbin/nologin" >> /etc/passwd
+function patch_istio_for_knative(){
+  local sidecar_config=$(oc get configmap -n istio-system istio-sidecar-injector -o yaml)
+  if [[ -z "${sidecar_config}" ]]; then
+    return 1
   fi
-  cat /etc/passwd
-}
-
-function disable_strict_host_checking(){
-  cat >> ~/.ssh/config <<EOF
-Host *
-   StrictHostKeyChecking no
-   UserKnownHostsFile=/dev/null
-EOF
+  echo "${sidecar_config}" | grep lifecycle
+  if [[ $? -eq 1 ]]; then
+    echo "Patching Istio's preStop hook for graceful shutdown"
+    echo "${sidecar_config}" | sed 's/\(name: istio-proxy\)/\1\\n    lifecycle:\\n      preStop:\\n        exec:\\n          command: [\\"sh\\", \\"-c\\", \\"sleep 20; while [ $(netstat -plunt | grep tcp | grep -v envoy | wc -l | xargs) -ne 0 ]; do sleep 1; done\\"]/' | oc replace -f -
+    oc delete pod -n istio-system -l istio=sidecar-injector
+    wait_until_pods_running istio-system || return 1
+  fi
+  return 0
 }
 
 function install_istio(){
   header "Installing Istio"
-  # Grant the necessary privileges to the service accounts Istio will use:
-  oc adm policy add-scc-to-user anyuid -z istio-ingress-service-account -n istio-system
-  oc adm policy add-scc-to-user anyuid -z default -n istio-system
-  oc adm policy add-scc-to-user anyuid -z prometheus -n istio-system
-  oc adm policy add-scc-to-user anyuid -z istio-egressgateway-service-account -n istio-system
-  oc adm policy add-scc-to-user anyuid -z istio-citadel-service-account -n istio-system
-  oc adm policy add-scc-to-user anyuid -z istio-ingressgateway-service-account -n istio-system
-  oc adm policy add-scc-to-user anyuid -z istio-cleanup-old-ca-service-account -n istio-system
-  oc adm policy add-scc-to-user anyuid -z istio-mixer-post-install-account -n istio-system
-  oc adm policy add-scc-to-user anyuid -z istio-mixer-service-account -n istio-system
-  oc adm policy add-scc-to-user anyuid -z istio-pilot-service-account -n istio-system
-  oc adm policy add-scc-to-user anyuid -z istio-sidecar-injector-service-account -n istio-system
-  oc adm policy add-scc-to-user anyuid -z cluster-local-gateway-service-account -n istio-system
-  oc adm policy add-cluster-role-to-user cluster-admin -z istio-galley-service-account -n istio-system
-  
-  # Deploy the latest Istio release
-  oc apply -f $KNATIVE_ISTIO_CRD_YAML
-  oc apply -f $KNATIVE_ISTIO_YAML
 
-  # Ensure the istio-sidecar-injector pod runs as privileged
-  oc get cm istio-sidecar-injector -n istio-system -o yaml | sed -e 's/securityContext:/securityContext:\\n      privileged: true/' | oc replace -f -
-  # Monitor the Istio components until all the components are up and running
+  # Install the Maistra Operator
+  oc create namespace istio-operator
+  oc process -f $MAISTRA_RELEASE | oc create -f -
+
+  # Wait until the Operator pod is up and running
+  wait_until_pods_running istio-operator || return 1
+
+  # Deploy Istio
+  cat <<EOF | oc apply -f -
+apiVersion: istio.openshift.com/v1alpha1
+kind: Installation
+metadata:
+  namespace: istio-operator
+  name: istio-installation
+spec:
+  istio:
+    authentication: false
+    community: true
+EOF
+
+  # Wait until at least the istio installer job is running
   wait_until_pods_running istio-system || return 1
+
+  timeout_non_zero 900 'oc get pods -n istio-system && [[ $(oc get pods -n istio-system | grep openshift-ansible-istio-installer | grep -c Completed) -eq 0 ]]' || return 1
+
+  # Scale down unused services deployed by the istio operator. The
+  # jaeger pods will fail anyway due to the elasticsearch pod failing
+  # due to "max virtual memory areas vm.max_map_count [65530] is too
+  # low, increase to at least [262144]" which could be mitigated on
+  # minishift with:
+  #  minishift ssh "echo 'echo vm.max_map_count = 262144 >/etc/sysctl.d/99-elasticsearch.conf' | sudo sh"
+  oc scale -n istio-system --replicas=0 deployment/grafana
+  oc scale -n istio-system --replicas=0 deployment/jaeger-collector
+  oc scale -n istio-system --replicas=0 deployment/jaeger-query
+  oc scale -n istio-system --replicas=0 statefulset/elasticsearch
+
+  patch_istio_for_knative || return 1
+  
   header "Istio Installed successfully"
 }
+
+function install_knative_build(){
+  header "Installing Knative Build"
+
+  oc adm policy add-scc-to-user anyuid -z build-controller -n knative-build
+  oc adm policy add-cluster-role-to-user cluster-admin -z build-controller -n knative-build
+  oc adm policy add-cluster-role-to-user cluster-admin -z build-pipeline-controller -n knative-build-pipeline
+
+  oc apply -f $BUILD_RELEASE
+
+  wait_until_pods_running knative-build || return 1
+  header "Knative Build installed successfully"
+}
+
 
 function install_knative_serving(){
   header "Installing Knative Serving"
 
   # Grant the necessary privileges to the service accounts Knative will use:
-  oc adm policy add-scc-to-user anyuid -z build-controller -n knative-build
   oc adm policy add-scc-to-user anyuid -z controller -n knative-serving
   oc adm policy add-scc-to-user anyuid -z autoscaler -n knative-serving
-  oc adm policy add-cluster-role-to-user cluster-admin -z build-controller -n knative-build
   oc adm policy add-cluster-role-to-user cluster-admin -z controller -n knative-serving
 
-  curl -L ${KNATIVE_SERVING_RELEASE} | sed '/nodePort/d' | oc apply -f -
-  
-  echo ">>> Setting SSL_CERT_FILE for Knative Serving Controller"
-  oc set env -n knative-serving deployment/controller SSL_CERT_FILE=/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt
+  curl -L https://storage.googleapis.com/knative-releases/serving/latest/serving.yaml \
+  | sed 's/LoadBalancer/NodePort/' \
+  | oc apply --filename -
 
-  echo ">> Patching knative-ingressgateway"
-  oc patch hpa -n istio-system knative-ingressgateway --patch '{"spec": {"maxReplicas": 1}}'
+  enable_knative_interaction_with_registry
 
-  wait_until_pods_running knative-build || return 1
+  echo ">> Patching istio-ingressgateway"
+  oc patch hpa -n istio-system istio-ingressgateway --patch '{"spec": {"maxReplicas": 1}}'
+
   wait_until_pods_running knative-serving || return 1
-  wait_until_service_has_external_ip istio-system knative-ingressgateway || fail_test "Ingress has no external IP"
-  header "Knative Installed successfully"
-}
-
-function install_knative_eventing_sources(){
-  header "Installing Knative Eventing Sources"
-  oc apply -f ${KNATIVE_EVENTING_SOURCES_RELEASE}
-  wait_until_pods_running knative-sources || return 1
+  wait_until_service_has_external_ip istio-system istio-ingressgateway || fail_test "Ingress has no external IP"
+  header "Knative Serving installed successfully"
 }
 
 function install_knative_eventing(){
@@ -132,7 +158,7 @@ function install_knative_eventing(){
   echo ">>> Setting SSL_CERT_FILE for Knative Eventing Controller"
   oc set env -n $EVENTING_NAMESPACE deployment/eventing-controller SSL_CERT_FILE=/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt
 
-  wait_until_pods_running $EVENTING_NAMESPACE
+  wait_until_pods_running $EVENTING_NAMESPACE || return 1
 }
 
 function install_in_memory_channel_provisioner(){
@@ -141,12 +167,25 @@ function install_in_memory_channel_provisioner(){
   oc apply -f channel-resolved.yaml
 }
 
+function install_knative_eventing_sources(){
+  header "Installing Knative Eventing Sources"
+  oc apply -f ${EVENTING_SOURCES_RELEASE}
+  wait_until_pods_running knative-sources || return 1
+}
+
 function create_test_resources() {
   echo ">> Ensuring pods in test namespaces can access test images"
   oc policy add-role-to-group system:image-puller system:serviceaccounts:$TEST_NAMESPACE --namespace=$EVENTING_NAMESPACE
+  oc policy add-role-to-group system:image-puller system:serviceaccounts:$TEST_FUNCTION_NAMESPACE --namespace=$EVENTING_NAMESPACE
 
   echo ">> Creating imagestream tags for all test images"
   tag_test_images test/test_images
+
+  #Grant additional privileges
+  oc adm policy add-scc-to-user anyuid -z default -n $TEST_FUNCTION_NAMESPACE
+  oc adm policy add-scc-to-user privileged -z default -n $TEST_FUNCTION_NAMESPACE
+  oc adm policy add-scc-to-user anyuid -z e2e-receive-adapter -n $TEST_FUNCTION_NAMESPACE
+  oc adm policy add-scc-to-user privileged -z e2e-receive-adapter -n $TEST_FUNCTION_NAMESPACE
 }
 
 function resolve_resources(){
@@ -170,13 +209,23 @@ function resolve_resources(){
   done
 }
 
-function enable_docker_schema2(){
-  oc set env -n default dc/docker-registry REGISTRY_MIDDLEWARE_REPOSITORY_OPENSHIFT_ACCEPTSCHEMA2=true
-}
-
 function create_test_namespace(){
   oc new-project $TEST_NAMESPACE
   oc adm policy add-scc-to-user privileged -z default -n $TEST_NAMESPACE
+  oc new-project $TEST_FUNCTION_NAMESPACE
+  oc adm policy add-scc-to-user privileged -z default -n $TEST_FUNCTION_NAMESPACE
+}
+
+function enable_knative_interaction_with_registry() {
+  local configmap_name=config-service-ca
+  local cert_name=service-ca.crt
+  local mount_path=/var/run/secrets/kubernetes.io/servicecerts
+
+  oc -n $SERVING_NAMESPACE create configmap $configmap_name
+  oc -n $SERVING_NAMESPACE annotate configmap $configmap_name service.alpha.openshift.io/inject-cabundle="true"
+  wait_until_configmap_contains $SERVING_NAMESPACE $configmap_name $cert_name
+  oc -n $SERVING_NAMESPACE set volume deployment/controller --add --name=service-ca --configmap-name=$configmap_name --mount-path=$mount_path
+  oc -n $SERVING_NAMESPACE set env deployment/controller SSL_CERT_FILE=$mount_path/$cert_name
 }
 
 function run_e2e_tests(){
@@ -194,24 +243,32 @@ function run_e2e_tests(){
 
 function delete_istio_openshift(){
   echo ">> Bringing down Istio"
-  oc delete --ignore-not-found=true -f ${KNATIVE_ISTIO_CRD_YAML}
-  oc delete --ignore-not-found=true -f ${KNATIVE_ISTIO_YAML}
+  oc delete -n istio-operator installation istio-installation
+  #oc process -f $MAISTRA_RELEASE | oc delete --ignore-not-found=true -f -
 }
 
 function delete_serving_openshift() {
   echo ">> Bringing down Serving"
-  oc delete --ignore-not-found=true -f ${KNATIVE_SERVING_RELEASE}
+  oc delete --ignore-not-found=true -f $SERVING_RELEASE
+}
+
+function delete_build_openshift() {
+  echo ">> Bringing down Build"
+  oc delete --ignore-not-found=true -f $BUILD_RELEASE
 }
 
 function delete_test_namespace(){
   echo ">> Deleting test namespace $TEST_NAMESPACE"
   oc adm policy remove-scc-from-user privileged -z default -n $TEST_NAMESPACE
   oc delete project $TEST_NAMESPACE
+  echo ">> Deleting test namespace $TEST_FUNCTION_NAMESPACE"
+  oc adm policy remove-scc-from-user privileged -z default -n $TEST_FUNCTION_NAMESPACE
+  oc delete project $TEST_FUNCTION_NAMESPACE
 }
 
 function delete_knative_eventing_sources(){
   header "Brinding down Knative Eventing Sources"
-  oc delete --ignore-not-found=true -f ${KNATIVE_EVENTING_SOURCES_RELEASE}
+  oc delete --ignore-not-found=true -f $EVENTING_SOURCES_RELEASE
 }
 
 function delete_knative_eventing(){
@@ -227,9 +284,10 @@ function delete_in_memory_channel_provisioner(){
 function teardown() {
   delete_test_namespace
   delete_in_memory_channel_provisioner
-  delete_knative_eventing
   delete_knative_eventing_sources
+  delete_knative_eventing
   delete_serving_openshift
+  delete_build_openshift
   delete_istio_openshift
 }
 
@@ -249,27 +307,26 @@ function tag_built_image() {
   oc tag --insecure=${INSECURE} -n ${EVENTING_NAMESPACE} ${OPENSHIFT_REGISTRY}/${OPENSHIFT_BUILD_NAMESPACE}/stable:${remote_name} ${local_name}:latest
 }
 
-enable_admission_webhooks
 
-install_istio
-
-enable_docker_schema2
-
-install_knative_serving
-
-install_knative_eventing_sources
-
-install_knative_eventing
-
-install_in_memory_channel_provisioner
-
-create_test_namespace
-
-create_test_resources
+create_test_namespace || exit 1
 
 failed=0
 
-run_e2e_tests || failed=1
+(( !failed )) && install_istio || failed=1
+
+(( !failed )) && install_knative_build || failed=1
+
+(( !failed )) && install_knative_serving || failed=1
+
+(( !failed )) && install_knative_eventing || failed=1
+
+(( !failed )) && install_in_memory_channel_provisioner || failed=1
+
+(( !failed )) && install_knative_eventing_sources || failed=1
+
+(( !failed )) && create_test_resources
+
+(( !failed )) && run_e2e_tests || failed=1
 
 (( failed )) && dump_cluster_state
 
