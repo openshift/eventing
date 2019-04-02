@@ -335,9 +335,13 @@ function run_origin_e2e() {
   
   timeout 60 "oc get pods -n knative-eventing | grep e2e-origin-testsuite | grep -E 'Running'"
   e2e_origin_pod=$(oc get pods -n knative-eventing | grep e2e-origin-testsuite | grep -E 'Running' | awk '{print $1}')
-  timeout 3600 "oc -n knative-eventing exec $e2e_origin_pod -c test ls /tmp/artifacts/e2e-origin/test_logs.tar"
+  timeout 3600 "oc -n knative-eventing exec $e2e_origin_pod -c e2e-test-origin ls /tmp/artifacts/e2e-origin/test_logs.tar"
   oc cp knative-eventing/${e2e_origin_pod}:/tmp/artifacts/e2e-origin/test_logs.tar .
-  tar xvf test_logs.tar
+  tar xvf test_logs.tar -C /tmp/artifacts
+  mkdir -p /tmp/artifacts/junit
+  junit_file=$(find /tmp/artifacts -name "junit_e2e_*.xml")
+  mv $junit_file /tmp/artifacts/junit
+  mv /tmp/artifacts/tmp/artifacts/e2e-origin/e2e-origin.log /tmp/artifacts
 }
 
 function scale_up_workers(){
