@@ -21,6 +21,7 @@ readonly INTERNAL_REGISTRY="${INTERNAL_REGISTRY:-"docker-registry.default.svc:50
 readonly USER=$KUBE_SSH_USER #satisfy e2e_flags.go#initializeFlags()
 readonly OPENSHIFT_REGISTRY="${OPENSHIFT_REGISTRY:-"registry.svc.ci.openshift.org"}"
 readonly INSECURE="${INSECURE:-"false"}"
+readonly TEST_ORIGIN_CONFORMANCE="${TEST_ORIGIN_CONFORMANCE:-"false"}"
 readonly SERVING_NAMESPACE=knative-serving
 readonly EVENTING_NAMESPACE=knative-eventing
 readonly TEST_NAMESPACE=e2etest
@@ -325,18 +326,18 @@ function tag_built_image() {
 function run_origin_e2e() {
   local param_file=e2e-origin-params.txt
   (
-    echo "NAMESPACE=knative-eventing"
+    echo "NAMESPACE=$EVENTING_NAMESPACE"
     echo "IMAGE_TESTS=registry.svc.ci.openshift.org/openshift/origin-v4.0:tests"
     echo "TEST_COMMAND=TEST_SUITE=openshift/conformance/parallel run-tests"
   ) > $param_file
   
-  oc -n knative-eventing create configmap kubeconfig --from-file=kubeconfig=$KUBECONFIG
-  oc -n knative-eventing new-app -f ./openshift/e2e-origin-job.yaml --param-file=$param_file
+  oc -n $EVENTING_NAMESPACE create configmap kubeconfig --from-file=kubeconfig=$KUBECONFIG
+  oc -n $EVENTING_NAMESPACE new-app -f ./openshift/origin-e2e-job.yaml --param-file=$param_file
   
-  timeout 60 "oc get pods -n knative-eventing | grep e2e-origin-testsuite | grep -E 'Running'"
-  e2e_origin_pod=$(oc get pods -n knative-eventing | grep e2e-origin-testsuite | grep -E 'Running' | awk '{print $1}')
-  timeout 3600 "oc -n knative-eventing exec $e2e_origin_pod -c e2e-test-origin ls /tmp/artifacts/e2e-origin/test_logs.tar"
-  oc cp knative-eventing/${e2e_origin_pod}:/tmp/artifacts/e2e-origin/test_logs.tar .
+  timeout 60 "oc get pods -n $EVENTING_NAMESPACE | grep e2e-origin-testsuite | grep -E 'Running'"
+  e2e_origin_pod=$(oc get pods -n $EVENTING_NAMESPACE | grep e2e-origin-testsuite | grep -E 'Running' | awk '{print $1}')
+  timeout 3600 "oc -n $EVENTING_NAMESPACE exec $e2e_origin_pod -c e2e-test-origin ls /tmp/artifacts/e2e-origin/test_logs.tar"
+  oc cp ${EVENTING_NAMESPACE}/${e2e_origin_pod}:/tmp/artifacts/e2e-origin/test_logs.tar .
   tar xvf test_logs.tar -C /tmp/artifacts
   mkdir -p /tmp/artifacts/junit
   junit_file=$(find /tmp/artifacts -name "junit_e2e_*.xml")
@@ -389,7 +390,7 @@ scale_up_workers || exit 1
 
 (( !failed )) && install_in_memory_channel_provisioner || failed=1
 
-(( !failed )) && run_origin_e2e || failed=1
+(( !failed )) && [[ $TEST_ORIGIN_CONFORMANCE == true ]] && run_origin_e2e || failed=1
 
 (( !failed )) && create_test_namespace
 
