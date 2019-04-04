@@ -206,7 +206,7 @@ function resolve_resources(){
   echo ">> Creating imagestream tags for images referenced in yaml files"
   IMAGE_NAMES=$(cat $resolved_file_name | grep -i "image:" | grep "$INTERNAL_REGISTRY" | awk '{print $2}' | awk -F '/' '{print $3}')
   for name in $IMAGE_NAMES; do
-    tag_built_image ${name} ${name} "latest"
+    tag_built_image ${name} ${name} latest
   done
 }
 
@@ -298,7 +298,7 @@ function tag_test_images() {
 
   for image_dir in ${image_dirs}; do
     name=$(basename ${image_dir})
-    tag_built_image knative-eventing-test-${name} ${name} "e2e"
+    tag_built_image knative-eventing-test-${name} ${name} e2e
 
   done
 }
