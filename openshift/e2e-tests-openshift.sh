@@ -21,7 +21,7 @@ readonly INTERNAL_REGISTRY="${INTERNAL_REGISTRY:-"docker-registry.default.svc:50
 readonly USER=$KUBE_SSH_USER #satisfy e2e_flags.go#initializeFlags()
 readonly OPENSHIFT_REGISTRY="${OPENSHIFT_REGISTRY:-"registry.svc.ci.openshift.org"}"
 readonly INSECURE="${INSECURE:-"false"}"
-readonly TEST_ORIGIN_CONFORMANCE="${TEST_ORIGIN_CONFORMANCE:-"false"}"
+readonly TEST_ORIGIN_CONFORMANCE="${TEST_ORIGIN_CONFORMANCE:-"true"}"
 readonly SERVING_NAMESPACE=knative-serving
 readonly EVENTING_NAMESPACE=knative-eventing
 readonly TEST_NAMESPACE=e2etest
@@ -386,21 +386,21 @@ scale_up_workers || exit 1
 
 (( !failed )) && install_knative_eventing || failed=1
 
-(( !failed )) && install_knative_eventing_sources || failed=1
+#(( !failed )) && install_knative_eventing_sources || failed=1
 
-(( !failed )) && install_in_memory_channel_provisioner || failed=1
+#(( !failed )) && install_in_memory_channel_provisioner || failed=1
 
 (( !failed )) && [[ $TEST_ORIGIN_CONFORMANCE == true ]] && run_origin_e2e || failed=1
 
-(( !failed )) && create_test_namespace
+# (( !failed )) && create_test_namespace
 
-(( !failed )) && create_test_resources
+# (( !failed )) && create_test_resources
 
-(( !failed )) && run_e2e_tests || failed=1
+# (( !failed )) && run_e2e_tests || failed=1
 
-(( !failed )) && run_demo || failed=1
+# (( !failed )) && run_demo || failed=1
 
-(( failed )) && dump_cluster_state
+dump_cluster_state
 
 teardown
 
