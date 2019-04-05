@@ -21,6 +21,7 @@ readonly INTERNAL_REGISTRY="${INTERNAL_REGISTRY:-"docker-registry.default.svc:50
 readonly USER=$KUBE_SSH_USER #satisfy e2e_flags.go#initializeFlags()
 readonly OPENSHIFT_REGISTRY="${OPENSHIFT_REGISTRY:-"registry.svc.ci.openshift.org"}"
 readonly INSECURE="${INSECURE:-"false"}"
+readonly TEST_ORIGIN_CONFORMANCE="${TEST_ORIGIN_CONFORMANCE:-"false"}"
 readonly SERVING_NAMESPACE=knative-serving
 readonly EVENTING_NAMESPACE=knative-eventing
 readonly TEST_NAMESPACE=e2etest
@@ -307,6 +308,57 @@ function tag_built_image() {
   oc tag --insecure=${INSECURE} -n ${EVENTING_NAMESPACE} ${OPENSHIFT_REGISTRY}/${OPENSHIFT_BUILD_NAMESPACE}/stable:${remote_name} ${local_name}:latest
 }
 
+function run_origin_e2e() {
+  local param_file=e2e-origin-params.txt
+  (
+    echo "NAMESPACE=$EVENTING_NAMESPACE"
+    echo "IMAGE_TESTS=registry.svc.ci.openshift.org/openshift/origin-v4.0:tests"
+    echo "TEST_COMMAND=TEST_SUITE=openshift/conformance/parallel run-tests"
+  ) > $param_file
+  
+  oc -n $EVENTING_NAMESPACE create configmap kubeconfig --from-file=kubeconfig=$KUBECONFIG
+  oc -n $EVENTING_NAMESPACE new-app -f ./openshift/origin-e2e-job.yaml --param-file=$param_file
+  
+  timeout 60 "oc get pods -n $EVENTING_NAMESPACE | grep e2e-origin-testsuite | grep -E 'Running'"
+  e2e_origin_pod=$(oc get pods -n $EVENTING_NAMESPACE | grep e2e-origin-testsuite | grep -E 'Running' | awk '{print $1}')
+  timeout 3600 "oc -n $EVENTING_NAMESPACE exec $e2e_origin_pod -c e2e-test-origin ls /tmp/artifacts/e2e-origin/test_logs.tar"
+  oc cp ${EVENTING_NAMESPACE}/${e2e_origin_pod}:/tmp/artifacts/e2e-origin/test_logs.tar .
+  tar xvf test_logs.tar -C /tmp/artifacts
+  mkdir -p /tmp/artifacts/junit
+  mv $(find /tmp/artifacts -name "junit_e2e_*.xml") /tmp/artifacts/junit
+  mv /tmp/artifacts/tmp/artifacts/e2e-origin/e2e-origin.log /tmp/artifacts
+}
+
+function scale_up_workers(){
+  local cluster_api_ns="openshift-machine-api"
+  # Get the name of the first machineset that has at least 1 replica
+  local machineset=$(oc get machineset -n ${cluster_api_ns} -o custom-columns="name:{.metadata.name},replicas:{.spec.replicas}" -l machine.openshift.io/cluster-api-machine-type=worker | grep " 1" | head -n 1 | awk '{print $1}')
+  # Bump the number of replicas to 6 (+ 1 + 1 == 8 workers)
+  oc patch machineset -n ${cluster_api_ns} ${machineset} -p '{"spec":{"replicas":6}}' --type=merge
+  wait_until_machineset_scales_up ${cluster_api_ns} ${machineset} 6
+}
+
+# Waits until the machineset in the given namespaces scales up to the
+# desired number of replicas
+# Parameters: $1 - namespace
+#             $2 - machineset name
+#             $3 - desired number of replicas
+function wait_until_machineset_scales_up() {
+  echo -n "Waiting until machineset $2 in namespace $1 scales up to $3 replicas"
+  for i in {1..150}; do  # timeout after 15 minutes
+    local available=$(oc get machineset -n $1 $2 -o jsonpath="{.status.availableReplicas}")
+    if [[ ${available} -eq $3 ]]; then
+      echo -e "\nMachineSet $2 in namespace $1 successfully scaled up to $3 replicas"
+      return 0
+    fi
+    echo -n "."
+    sleep 6
+  done
+  echo - "\n\nError: timeout waiting for machineset $2 in namespace $1 to scale up to $3 replicas"
+  return 1
+}
+
+scale_up_workers || exit 1
 
 create_test_namespace || exit 1
 
@@ -325,6 +377,8 @@ failed=0
 (( !failed )) && install_knative_eventing_sources || failed=1
 
 (( !failed )) && create_test_resources
+
+(( !failed )) && [[ $TEST_ORIGIN_CONFORMANCE == true ]] && run_origin_e2e || failed=1
 
 (( !failed )) && run_e2e_tests || failed=1
 
