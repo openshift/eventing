@@ -8,7 +8,6 @@ spec:
     Kubernetes-native Eventing resource
   version: 0.4.1
   maturity: alpha
-  replaces: knative-eventing.v0.3.0
 
   installModes:
   - supported: true
