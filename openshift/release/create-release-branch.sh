@@ -13,5 +13,6 @@ git checkout -b "$target" "$release"
 git fetch openshift master
 git checkout openshift/master -- openshift OWNERS_ALIASES OWNERS Makefile
 make generate-dockerfiles
+make RELEASE=$release generate-release
 git add openshift OWNERS_ALIASES OWNERS Makefile
 git commit -m "Add openshift specific files."
