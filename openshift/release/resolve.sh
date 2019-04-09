@@ -20,6 +20,8 @@ function resolve_resources(){
     # 4. Remove comment lines
     # 5. Remove empty lines
     sed -e "s+\(.* image: \)\(github.com\)\(.*/\)\(test/\)\(.*\)+\1\2 \3\4test-\5+g" \
+        -e "s+github.com/knative/eventing/cmd/broker/ingress+${image_prefix}ingress${image_tag}+" \
+        -e "s+github.com/knative/eventing/cmd/broker/filter+${image_prefix}filter${image_tag}+" \
         -e "s+github.com/knative/eventing/pkg/provisioners/inmemory/controller+${image_prefix}in-memory-channel-controller${image_tag}+" \
         -e "s+\(.* image: \)\(github.com\)\(.*/\)\(.*\)+\1${image_prefix}\4${image_tag}+g" \
         -e '/^[ \t]*#/d' \

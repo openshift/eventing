@@ -24,7 +24,6 @@ import (
 	"time"
 
 	"github.com/knative/eventing/pkg/apis/eventing/v1alpha1"
-
 	"github.com/knative/eventing/test"
 	pkgTest "github.com/knative/pkg/test"
 	"github.com/knative/pkg/test/logging"
@@ -69,7 +68,11 @@ func TestDefaultBrokerWithManyTriggers(t *testing.T) {
 	// Label namespace so that it creates the default broker.
 	err := LabelNamespace(clients, t.Logf, map[string]string{"knative-eventing-injection": "enabled"})
 	if err != nil {
-		t.Fatalf("Error annotating namespace: %v", err)
+		// retry...
+		err := LabelNamespace(clients, t.Logf, map[string]string{"knative-eventing-injection": "enabled"})
+		if err != nil {
+			t.Fatalf("Error annotating namespace: %v", err)
+		}
 	}
 
 	t.Logf("Namespace %s annotated", ns)
