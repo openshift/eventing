@@ -1,7 +1,7 @@
 kind: ConfigMap
 apiVersion: v1
 metadata:
-  name: knative-operators
+  name: knative-eventing
 
 data:
   customResourceDefinitions: |-
@@ -750,13 +750,12 @@ data:
                     serviceAccountName: eventing-controller
                     containers:
                       - name: knative-eventing-operator
-                        image: quay.io/jcrossley3/knative-eventing-operator:0.4.1
+                        image: quay.io/openshift-knative/knative-eventing-operator:v0.4.1
                         command:
                         - knative-eventing-operator
                         args:
                           - --olm
                           - --install
-                          - --override-namespace
                         env:
                           - name: WATCH_NAMESPACE
                             valueFrom:
@@ -825,9 +824,9 @@ data:
 apiVersion: operators.coreos.com/v1alpha1
 kind: CatalogSource
 metadata:
-  name: knative-operators
+  name: knative-eventing
 spec:
-  configMap: knative-operators
-  displayName: Knative Operators
+  configMap: knative-eventing
+  displayName: Knative Eventing
   publisher: Red Hat
   sourceType: internal

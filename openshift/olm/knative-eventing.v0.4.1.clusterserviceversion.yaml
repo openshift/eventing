@@ -229,13 +229,12 @@ spec:
               serviceAccountName: eventing-controller
               containers:
                 - name: knative-eventing-operator
-                  image: quay.io/jcrossley3/knative-eventing-operator:0.4.1
+                  image: quay.io/openshift-knative/knative-eventing-operator:v0.4.1
                   command:
                   - knative-eventing-operator
                   args:
                     - --olm
                     - --install
-                    - --override-namespace
                   env:
                     - name: WATCH_NAMESPACE
                       valueFrom:
