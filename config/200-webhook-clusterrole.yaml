@@ -41,15 +41,16 @@ rules:
       - "apps"
     resources:
       - "deployments"
-      - "deployments/finalizers"
     verbs:
       - "get"
-      - "list"
-      - "create"
+
+  # For getting our Deployment so we can decorate with ownerref.
+  - apiGroups:
+      - "apps"
+    resources:
+      - "deployments/finalizers"
+    verbs:
       - "update"
-      - "delete"
-      - "patch"
-      - "watch"
 
   # For actually registering our webhook.
   - apiGroups:
