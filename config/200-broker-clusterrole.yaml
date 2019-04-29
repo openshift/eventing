@@ -26,3 +26,12 @@ rules:
       - "get"
       - "list"
       - "watch"
+  - apiGroups:
+      - security.openshift.io
+    resourceNames:
+      - privileged
+      - anyuid
+    resources:
+      - securitycontextconstraints
+    verbs:
+      - use
