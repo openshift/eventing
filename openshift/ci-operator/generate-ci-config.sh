@@ -1,6 +1,6 @@
 #!/bin/bash
 
-branch=${1-'knative-v0.5.0'}
+branch=${1-'knative-v0.6.0'}
 
 cat <<EOF
 tag_specification:
@@ -39,6 +39,7 @@ EOF
 core_images=$(find ./openshift/ci-operator/knative-images -mindepth 1 -maxdepth 1 -type d)
 for img in $core_images; do
   image_base=$(basename $img)
+  to_image=$(echo ${image_base//_/-})
   cat <<EOF
 - dockerfile_path: openshift/ci-operator/knative-images/$image_base/Dockerfile
   from: base
@@ -47,13 +48,14 @@ for img in $core_images; do
       paths:
       - destination_dir: .
         source_path: /go/bin/$image_base
-  to: knative-eventing-$image_base
+  to: knative-eventing-$to_image
 EOF
 done
 
 test_images=$(find ./openshift/ci-operator/knative-test-images -mindepth 1 -maxdepth 1 -type d)
 for img in $test_images; do
   image_base=$(basename $img)
+  to_image=$(echo ${image_base//_/-})
   cat <<EOF
 - dockerfile_path: openshift/ci-operator/knative-test-images/$image_base/Dockerfile
   from: base
@@ -62,6 +64,6 @@ for img in $test_images; do
       paths:
       - destination_dir: .
         source_path: /go/bin/$image_base
-  to: knative-eventing-test-$image_base
+  to: knative-eventing-test-$to_image
 EOF
 done
