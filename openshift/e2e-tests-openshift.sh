@@ -8,7 +8,7 @@ set -x
 readonly BUILD_VERSION=v0.4.0
 readonly BUILD_RELEASE=https://github.com/knative/build/releases/download/${BUILD_VERSION}/build.yaml
 readonly MAISTRA_VERSION="0.6"
-readonly SERVING_VERSION=v0.5.1
+readonly SERVING_VERSION=v0.5.2
 readonly SERVING_RELEASE=https://github.com/knative/serving/releases/download/${SERVING_VERSION}/serving.yaml
 readonly EVENTING_SOURCES_VERSION=v0.5.0
 readonly EVENTING_SOURCES_RELEASE=https://github.com/knative/eventing-sources/releases/download/${EVENTING_SOURCES_VERSION}/eventing-sources.yaml
