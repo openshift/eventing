@@ -1232,7 +1232,7 @@ spec:
       serviceAccountName: in-memory-channel-controller
       containers:
         - name: controller
-          image: quay.io/openshift-knative/knative-eventing-controller:ci
+          image: quay.io/openshift-knative/knative-eventing-in-memory-channel-controller:ci
           env:
           - name: SYSTEM_NAMESPACE
             valueFrom:
@@ -1291,7 +1291,7 @@ spec:
       serviceAccountName: in-memory-channel-dispatcher
       containers:
         - name: dispatcher
-          image: quay.io/openshift-knative/knative-eventing-dispatcher:ci
+          image: quay.io/openshift-knative/knative-eventing-in-memory-channel-dispatcher:ci
           env:
           - name: SYSTEM_NAMESPACE
             valueFrom:
