@@ -10,8 +10,8 @@ readonly BUILD_RELEASE=https://github.com/knative/build/releases/download/${BUIL
 readonly MAISTRA_VERSION="0.6"
 readonly SERVING_VERSION=v0.5.1
 readonly SERVING_RELEASE=https://github.com/knative/serving/releases/download/${SERVING_VERSION}/serving.yaml
-readonly EVENTING_SOURCES_VERSION=v0.5.0
-readonly EVENTING_SOURCES_RELEASE=https://github.com/knative/eventing-sources/releases/download/${EVENTING_SOURCES_VERSION}/eventing-sources.yaml
+# We use nightly, to match the fact we do build here the latest from EVENTING
+readonly EVENTING_SOURCES_RELEASE=https://storage.googleapis.com/knative-nightly/eventing-sources/latest/eventing-sources.yaml
 
 readonly K8S_CLUSTER_OVERRIDE=$(oc config current-context | awk -F'/' '{print $2}')
 readonly API_SERVER=$(oc config view --minify | grep server | awk -F'//' '{print $2}' | awk -F':' '{print $1}')
