@@ -22,8 +22,6 @@ readonly INSECURE="${INSECURE:-"false"}"
 readonly TEST_ORIGIN_CONFORMANCE="${TEST_ORIGIN_CONFORMANCE:-"false"}"
 readonly SERVING_NAMESPACE=knative-serving
 readonly EVENTING_NAMESPACE=knative-eventing
-readonly TEST_NAMESPACE=e2etest
-readonly TEST_FUNCTION_NAMESPACE=e2etest-knative-eventing
 readonly TARGET_IMAGE_PREFIX="$INTERNAL_REGISTRY/$EVENTING_NAMESPACE/knative-eventing-"
 
 env
@@ -206,18 +204,24 @@ function install_knative_eventing_sources(){
 
 function create_test_resources() {
   echo ">> Ensuring pods in test namespaces can access test images"
-  oc policy add-role-to-group system:image-puller system:serviceaccounts:$TEST_NAMESPACE --namespace=$EVENTING_NAMESPACE
-  oc policy add-role-to-group system:image-puller system:serviceaccounts:$TEST_FUNCTION_NAMESPACE --namespace=$EVENTING_NAMESPACE
+  oc policy add-role-to-group system:image-puller system:serviceaccounts --namespace=$EVENTING_NAMESPACE
 
   echo ">> Creating imagestream tags for all test images"
   tag_test_images test/test_images
 
-  #Grant additional privileges
-  oc adm policy add-scc-to-user anyuid -z default -n $TEST_FUNCTION_NAMESPACE
-  oc adm policy add-scc-to-user privileged -z default -n $TEST_FUNCTION_NAMESPACE
-  oc adm policy add-scc-to-user anyuid -z eventing-broker-filter -n $TEST_FUNCTION_NAMESPACE
-  oc adm policy add-scc-to-user privileged -z eventing-broker-filter -n $TEST_FUNCTION_NAMESPACE
-  oc adm policy add-cluster-role-to-user cluster-admin -z eventing-broker-filter -n $TEST_FUNCTION_NAMESPACE
+  # read to array
+  testNamesArray=($(cat TEST_NAMES |tr "\n" " "))
+
+  # process array to create the NS and give SCC
+  for i in "${testNamesArray[@]}"
+  do
+    oc adm policy add-scc-to-user anyuid -z default -n $i
+    oc adm policy add-scc-to-user privileged -z default -n $i
+    oc adm policy add-scc-to-user anyuid -z eventing-broker-filter -n $i
+    oc adm policy add-scc-to-user privileged -z eventing-broker-filter -n $i
+    oc adm policy add-cluster-role-to-user cluster-admin -z eventing-broker-filter -n $i
+  done
+
 }
 
 function tag_core_images(){
@@ -232,11 +236,26 @@ function tag_core_images(){
   done
 }
 
+function readTestFiles() {
+  for test in "./test/e2e"/*_test.go; do
+    grep "func Test" $test | awk '{print $2}' | awk -F'(' '{print $1}' >> TEST_NAMES;
+  done
+
+ sed -i "s/\([A-Z]\)/-\L\1/g" TEST_NAMES
+ sed -i "s/^-//" TEST_NAMES
+}
+
 function create_test_namespace(){
-  oc new-project $TEST_NAMESPACE
-  oc adm policy add-scc-to-user privileged -z default -n $TEST_NAMESPACE
-  oc new-project $TEST_FUNCTION_NAMESPACE
-  oc adm policy add-scc-to-user privileged -z default -n $TEST_FUNCTION_NAMESPACE
+  # read to array
+  testNamesArray=($(cat TEST_NAMES |tr "\n" " "))
+
+  # process array to create the NS and give SCC
+  for i in "${testNamesArray[@]}"
+  do
+    oc new-project $i
+    oc adm policy add-scc-to-user anyuid -z default -n $i
+    oc adm policy add-scc-to-user privileged -z default -n $i
+  done
 }
 
 function enable_knative_interaction_with_registry() {
@@ -278,15 +297,6 @@ function delete_build_openshift() {
   oc delete --ignore-not-found=true -f $BUILD_RELEASE
 }
 
-function delete_test_namespace(){
-  echo ">> Deleting test namespace $TEST_NAMESPACE"
-  oc adm policy remove-scc-from-user privileged -z default -n $TEST_NAMESPACE
-  oc delete project $TEST_NAMESPACE
-  echo ">> Deleting test namespace $TEST_FUNCTION_NAMESPACE"
-  oc adm policy remove-scc-from-user privileged -z default -n $TEST_FUNCTION_NAMESPACE
-  oc delete project $TEST_FUNCTION_NAMESPACE
-}
-
 function delete_knative_eventing_sources(){
   header "Brinding down Knative Eventing Sources"
   oc delete --ignore-not-found=true -f $EVENTING_SOURCES_RELEASE
@@ -303,7 +313,7 @@ function delete_in_memory_channel_provisioner(){
 }
 
 function teardown() {
-  delete_test_namespace
+  rm TEST_NAMES
   delete_in_memory_channel_provisioner
   delete_knative_eventing_sources
   delete_knative_eventing
@@ -341,7 +351,7 @@ function run_origin_e2e() {
   oc -n $EVENTING_NAMESPACE create configmap kubeconfig --from-file=kubeconfig=$KUBECONFIG
   oc -n $EVENTING_NAMESPACE new-app -f ./openshift/origin-e2e-job.yaml --param-file=$param_file
   
-  timeout 60 "oc get pods -n $EVENTING_NAMESPACE | grep e2e-origin-testsuite | grep -E 'Running'"
+  timeout 240 "oc get pods -n $EVENTING_NAMESPACE | grep e2e-origin-testsuite | grep -E 'Running'"
   e2e_origin_pod=$(oc get pods -n $EVENTING_NAMESPACE | grep e2e-origin-testsuite | grep -E 'Running' | awk '{print $1}')
   timeout 3600 "oc -n $EVENTING_NAMESPACE exec $e2e_origin_pod -c e2e-test-origin ls /tmp/artifacts/e2e-origin/test_logs.tar"
   oc cp ${EVENTING_NAMESPACE}/${e2e_origin_pod}:/tmp/artifacts/e2e-origin/test_logs.tar .
@@ -384,6 +394,8 @@ function wait_until_machineset_scales_up() {
 }
 
 scale_up_workers || exit 1
+
+readTestFiles || exit 1
 
 create_test_namespace || exit 1
 
