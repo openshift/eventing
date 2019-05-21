@@ -9,7 +9,7 @@ set -x
 readonly BUILD_VERSION=v0.4.0
 readonly BUILD_RELEASE=https://github.com/knative/build/releases/download/${BUILD_VERSION}/build.yaml
 readonly MAISTRA_VERSION="0.10"
-readonly SERVING_VERSION=v0.5.1
+readonly SERVING_VERSION=v0.6.0
 readonly SERVING_RELEASE=https://github.com/knative/serving/releases/download/${SERVING_VERSION}/serving.yaml
 # We use nightly, to match the fact we do build here the latest from EVENTING
 readonly EVENTING_VERSION=v0.6.0
