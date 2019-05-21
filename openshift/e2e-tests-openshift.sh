@@ -2,6 +2,7 @@
 
 source $(dirname $0)/../vendor/github.com/knative/test-infra/scripts/e2e-tests.sh
 source $(dirname $0)/release/resolve.sh
+source $(dirname $0)/kubecon-demo.sh
 
 set -x
 
@@ -11,7 +12,8 @@ readonly MAISTRA_VERSION="0.10"
 readonly SERVING_VERSION=v0.5.1
 readonly SERVING_RELEASE=https://github.com/knative/serving/releases/download/${SERVING_VERSION}/serving.yaml
 # We use nightly, to match the fact we do build here the latest from EVENTING
-readonly EVENTING_SOURCES_RELEASE=https://storage.googleapis.com/knative-nightly/eventing-sources/latest/eventing-sources.yaml
+readonly EVENTING_VERSION=v0.6.0
+readonly EVENTING_SOURCES_RELEASE=https://github.com/knative/eventing-sources/releases/download/${EVENTING_VERSION}/eventing-sources.yaml
 
 readonly K8S_CLUSTER_OVERRIDE=$(oc config current-context | awk -F'/' '{print $2}')
 readonly API_SERVER=$(oc config view --minify | grep server | awk -F'//' '{print $2}' | awk -F':' '{print $1}')
@@ -429,6 +431,8 @@ if [[ $TEST_ORIGIN_CONFORMANCE == true ]]; then
 fi
 
 (( !failed )) && run_e2e_tests || failed=1
+
+(( !failed )) && run_demo || failed=1
 
 (( failed )) && dump_cluster_state
 
