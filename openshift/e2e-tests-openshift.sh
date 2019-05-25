@@ -8,8 +8,6 @@ set -x
 readonly BUILD_VERSION=v0.4.0
 readonly BUILD_RELEASE=https://github.com/knative/build/releases/download/${BUILD_VERSION}/build.yaml
 readonly SERVING_VERSION=v0.6.0
-# We use nightly, to match the fact we do build here the latest from EVENTING
-readonly EVENTING_SOURCES_RELEASE=https://storage.googleapis.com/knative-nightly/eventing-sources/latest/eventing-sources.yaml
 
 readonly K8S_CLUSTER_OVERRIDE=$(oc config current-context | awk -F'/' '{print $2}')
 readonly API_SERVER=$(oc config view --minify | grep server | awk -F'//' '{print $2}' | awk -F':' '{print $1}')
@@ -163,12 +161,6 @@ function install_in_memory_channel_provisioner(){
   oc apply -f channel-resolved.yaml
 }
 
-function install_knative_eventing_sources(){
-  header "Installing Knative Eventing Sources"
-  oc apply -f ${EVENTING_SOURCES_RELEASE}
-  wait_until_pods_running knative-sources || return 1
-}
-
 function create_test_resources() {
   echo ">> Ensuring pods in test namespaces can access test images"
   oc policy add-role-to-group system:image-puller system:serviceaccounts --namespace=$EVENTING_NAMESPACE
@@ -264,11 +256,6 @@ function delete_build_openshift() {
   oc delete --ignore-not-found=true -f $BUILD_RELEASE
 }
 
-function delete_knative_eventing_sources(){
-  header "Brinding down Knative Eventing Sources"
-  oc delete --ignore-not-found=true -f $EVENTING_SOURCES_RELEASE
-}
-
 function delete_knative_eventing(){
   header "Bringing down Eventing"
   oc delete --ignore-not-found=true -f eventing-resolved.yaml
@@ -282,7 +269,6 @@ function delete_in_memory_channel_provisioner(){
 function teardown() {
   rm TEST_NAMES
   delete_in_memory_channel_provisioner
-  delete_knative_eventing_sources
   delete_knative_eventing
   delete_serving_openshift
   delete_build_openshift
@@ -375,8 +361,6 @@ failed=0
 (( !failed )) && install_knative_eventing || failed=1
 
 (( !failed )) && install_in_memory_channel_provisioner || failed=1
-
-(( !failed )) && install_knative_eventing_sources || failed=1
 
 (( !failed )) && create_test_resources
 
