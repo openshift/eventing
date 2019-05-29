@@ -56,7 +56,7 @@ function install_knative_serving(){
   wait_until_pods_running $OLM_NAMESPACE
 
   # Deploy Knative Operators Serving
-  deploy_knative_operator serving
+  deploy_knative_operator serving KnativeServing
 
   # Wait for 6 pods to appear first
   timeout_non_zero 900 '[[ $(oc get pods -n $SERVING_NAMESPACE --no-headers | wc -l) -lt 6 ]]' || return 1
@@ -75,6 +75,7 @@ function install_knative_serving(){
 
 function deploy_knative_operator(){
   local COMPONENT="knative-$1"
+  local KIND=$2
 
   cat <<-EOF | oc apply -f -
 	apiVersion: v1
@@ -107,11 +108,11 @@ function deploy_knative_operator(){
 
   # Wait until the server knows about the Install CRD before creating
   # an instance of it below
-  timeout_non_zero 60 '[[ $(oc get crd installs.serving.knative.dev -o jsonpath="{.status.acceptedNames.kind}" | grep -c Install) -eq 0 ]]' || return 1
+  timeout_non_zero 60 '[[ $(oc get crd knativeservings.serving.knative.dev -o jsonpath="{.status.acceptedNames.kind}" | grep -c $KIND) -eq 0 ]]' || return 1
   
   cat <<-EOF | oc apply -f -
   apiVersion: serving.knative.dev/v1alpha1
-  kind: Install
+  kind: $KIND
   metadata:
     name: ${COMPONENT}
     namespace: ${COMPONENT}
