@@ -107,11 +107,11 @@ function deploy_knative_operator(){
 
   # Wait until the server knows about the Install CRD before creating
   # an instance of it below
-  timeout_non_zero 60 '[[ $(oc get crd installs.serving.knative.dev -o jsonpath="{.status.acceptedNames.kind}" | grep -c Install) -eq 0 ]]' || return 1
+  timeout_non_zero 60 '[[ $(oc get crd knativeservings.serving.knative.dev -o jsonpath="{.status.acceptedNames.kind}" | grep -c Install) -eq 0 ]]' || return 1
   
   cat <<-EOF | oc apply -f -
   apiVersion: serving.knative.dev/v1alpha1
-  kind: Install
+  kind: KnativeServing
   metadata:
     name: ${COMPONENT}
     namespace: ${COMPONENT}
