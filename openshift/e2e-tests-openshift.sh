@@ -178,6 +178,9 @@ function create_test_resources() {
     oc adm policy add-scc-to-user anyuid -z eventing-broker-filter -n $i
     oc adm policy add-scc-to-user privileged -z eventing-broker-filter -n $i
     oc adm policy add-cluster-role-to-user cluster-admin -z eventing-broker-filter -n $i
+    oc adm policy add-scc-to-user anyuid -z eventing-broker-ingress -n $i
+    oc adm policy add-scc-to-user privileged -z eventing-broker-ingress -n $i
+    oc adm policy add-cluster-role-to-user cluster-admin -z eventing-broker-ingress -n $i
   done
 
 }
