@@ -7,7 +7,8 @@ TEST_IMAGES=$(shell find ./test/test_images -mindepth 1 -maxdepth 1 -type d)
 
 install:
 	go install $(CORE_IMAGES)
-	go build -o $(GOPATH)/bin/imc ./cmd/in_memory_channel_controller
+	go build -o $(GOPATH)/bin/imc-controller ./cmd/in_memory/channel_controller
+	go build -o $(GOPATH)/bin/imc-dispatcher ./cmd/in_memory/channel_dispatcher
 	go build -o $(GOPATH)/bin/in-memory-channel-controller ./cmd/in_memory/controller
 	go build -o $(GOPATH)/bin/in-memory-channel-dispatcher ./cmd/in_memory/dispatcher
 	go build -o $(GOPATH)/bin/kafka-channel-controller ./contrib/kafka/cmd/controller
@@ -31,7 +32,8 @@ test-origin-conformance:
 # Generate Dockerfiles used by ci-operator. The files need to be committed manually.
 generate-dockerfiles:
 	./openshift/ci-operator/generate-dockerfiles.sh openshift/ci-operator/knative-images $(CORE_IMAGES)
-	./openshift/ci-operator/generate-dockerfiles.sh openshift/ci-operator/knative-images imc
+	./openshift/ci-operator/generate-dockerfiles.sh openshift/ci-operator/knative-images imc-controller
+	./openshift/ci-operator/generate-dockerfiles.sh openshift/ci-operator/knative-images imc-dispatcher
 	./openshift/ci-operator/generate-dockerfiles.sh openshift/ci-operator/knative-images in-memory-channel-controller
 	./openshift/ci-operator/generate-dockerfiles.sh openshift/ci-operator/knative-images in-memory-channel-dispatcher
 	./openshift/ci-operator/generate-dockerfiles.sh openshift/ci-operator/knative-images kafka-channel-controller
