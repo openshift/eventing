@@ -15,6 +15,12 @@ else
 fi
 
 # Apache Kafka channel
-resolve_resources contrib/kafka/config/ kafka-resolved.yaml $image_prefix $release
-cat kafka-resolved.yaml >> $output_file
-rm kafka-resolved.yaml
+# TODO: remove in 0.8.0 - because the deprecated CCP is removed by than
+resolve_resources contrib/kafka/config/provisioner/ ccp-kafka-resolved.yaml $image_prefix $release
+cat ccp-kafka-resolved.yaml >> $output_file
+rm ccp-kafka-resolved.yaml
+
+# Apache Kafka channel CRD
+resolve_resources contrib/kafka/config/ crd-kafka-resolved.yaml $image_prefix $release
+cat crd-kafka-resolved.yaml >> $output_file
+rm crd-kafka-resolved.yaml
