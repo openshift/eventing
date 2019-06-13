@@ -13,6 +13,9 @@ install:
 	go build -o $(GOPATH)/bin/in-memory-channel-dispatcher ./cmd/in_memory/dispatcher
 	go build -o $(GOPATH)/bin/kafka-channel-controller ./contrib/kafka/cmd/controller
 	go build -o $(GOPATH)/bin/kafka-channel-dispatcher ./contrib/kafka/cmd/dispatcher
+	go build -o $(GOPATH)/bin/kafka-channel-crd-controller ./contrib/kafka/cmd/channel_controller
+	go build -o $(GOPATH)/bin/kafka-channel-crd-dispatcher ./contrib/kafka/cmd/channel_dispatcher
+	go build -o $(GOPATH)/bin/kafka-channel-crd-webhook ./contrib/kafka/cmd/webhook
 .PHONY: install
 
 test-install:
@@ -43,6 +46,9 @@ generate-dockerfiles:
 	./openshift/ci-operator/generate-dockerfiles.sh openshift/ci-operator/knative-images in-memory-channel-dispatcher
 	./openshift/ci-operator/generate-dockerfiles.sh openshift/ci-operator/knative-images kafka-channel-controller
 	./openshift/ci-operator/generate-dockerfiles.sh openshift/ci-operator/knative-images kafka-channel-dispatcher
+	./openshift/ci-operator/generate-dockerfiles.sh openshift/ci-operator/knative-images kafka-channel-crd-controller
+	./openshift/ci-operator/generate-dockerfiles.sh openshift/ci-operator/knative-images kafka-channel-crd-dispatcher
+	./openshift/ci-operator/generate-dockerfiles.sh openshift/ci-operator/knative-images kafka-channel-crd-webhook
 	./openshift/ci-operator/generate-dockerfiles.sh openshift/ci-operator/knative-test-images $(TEST_IMAGES)
 .PHONY: generate-dockerfiles
 
