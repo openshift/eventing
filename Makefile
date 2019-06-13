@@ -31,6 +31,11 @@ test-origin-conformance:
 
 # Generate Dockerfiles used by ci-operator. The files need to be committed manually.
 generate-dockerfiles:
+	# remove old shizzle to catch when images got removed!
+	rm -rf openshift/ci-operator/knative-images/*
+	rm -rf openshift/ci-operator/knative-test-images/*
+
+	# regenerate the images...
 	./openshift/ci-operator/generate-dockerfiles.sh openshift/ci-operator/knative-images $(CORE_IMAGES)
 	./openshift/ci-operator/generate-dockerfiles.sh openshift/ci-operator/knative-images imc-controller
 	./openshift/ci-operator/generate-dockerfiles.sh openshift/ci-operator/knative-images imc-dispatcher
