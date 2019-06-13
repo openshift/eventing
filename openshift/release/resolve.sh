@@ -25,6 +25,8 @@ function resolve_resources(){
         -e "s+github.com/knative/eventing/cmd/in_memory/dispatcher+${image_prefix}in-memory-channel-dispatcher${image_tag}+" \
         -e "s+github.com/knative/eventing/contrib/kafka/cmd/controller+${image_prefix}kafka-channel-controller${image_tag}+" \
         -e "s+github.com/knative/eventing/contrib/kafka/cmd/dispatcher+${image_prefix}kafka-channel-dispatcher${image_tag}+" \
+        -e "s+github.com/knative/eventing/cmd/in_memory/channel_controller+${image_prefix}imc-controller${image_tag}+" \
+        -e "s+github.com/knative/eventing/cmd/in_memory/channel_dispatcher+${image_prefix}imc-dispatcher${image_tag}+" \
         -e "s+github.com/knative/eventing/cmd/sources_controller+${image_prefix}sources-controller${image_tag}+" \
         -e "s+github.com/knative/eventing/cmd/cronjob_receive_adapter+${image_prefix}cronjob-receive-adapter${image_tag}+" \
         -e "s+github.com/knative/eventing/cmd/apiserver_receive_adapter+${image_prefix}apiserver-receive-adapter${image_tag}+" \
