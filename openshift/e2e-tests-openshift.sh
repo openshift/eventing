@@ -121,13 +121,13 @@ function deploy_knative_operator(){
 function install_knative_eventing(){
   header "Installing Knative Eventing"
 
-  # echo ">> Patching Knative Eventing CatalogSource to reference CI produced images"
-  # CURRENT_GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-  # RELEASE_YAML="https://raw.githubusercontent.com/openshift/knative-eventing/${CURRENT_GIT_BRANCH}/openshift/release/knative-eventing-ci.yaml"
-  # sed "s|--filename=.*|--filename=${RELEASE_YAML}|"  openshift/olm/knative-eventing.catalogsource.yaml > knative-eventing.catalogsource-ci.yaml
+  echo ">> Patching Knative Eventing CatalogSource to reference CI produced images"
+  CURRENT_GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+  RELEASE_YAML="https://raw.githubusercontent.com/openshift/knative-eventing/${CURRENT_GIT_BRANCH}/openshift/release/knative-eventing-ci.yaml"
+  sed "s|--filename=.*|--filename=${RELEASE_YAML}|"  openshift/olm/knative-eventing.catalogsource.yaml > knative-eventing.catalogsource-ci.yaml
 
   # Install CatalogSources in OLM namespace
-  oc apply -n $OLM_NAMESPACE -f openshift/olm/knative-eventing.catalogsource.yaml
+  oc apply -n $OLM_NAMESPACE -f knative-eventing.catalogsource-ci.yaml
   timeout_non_zero 900 '[[ $(oc get pods -n $OLM_NAMESPACE | grep -c knative-eventing) -eq 0 ]]' || return 1
   wait_until_pods_running $OLM_NAMESPACE
 
