@@ -1,36 +1,31 @@
 aliases:
-  # These aliases are for OWNERS of the various Channel implementations. These
-  # Are in addition to the repo level OWNERS.
-
-  gcp-pubsub-approvers:
-    - Harwayne
-  gcp-pubsub-reviewers:
-    - Harwayne
-  
-  kafka-approvers:
-    - bbrowning
-    - matzew
-  kafka-reviewers:
-    - bbrowning
-    - matzew
-
-  natss-approvers:
-    - Abd4llA
-  natss-reviewers:
-    - Abd4llA
-
-  productivity-approvers:
-  - adrcunha
-  - chaodaiG
-  - srinivashegde86
-  productivity-reviewers:
-  - adrcunha
-  - chaodaiG
-  - coryrc
-  - dushyanthsc
-  - ericKlawitter
-  - Fredy-Z
-  - nbarthwal
-  - srinivashegde86
-  - steuhs
-  - yt3liu
+  eventing-approvers:
+  - alanfx
+  - mgencur
+  - mvinkler
+  - bbrowning
+  - jcrossley3
+  - bobmcwhirter
+  - markusthoemmes
+  - vdemeester
+  - evanchooly
+  - arilivigni
+  - matzew
+  - lberk
+  - alanconway
+  - syedriko
+  eventing-reviewers:
+  - alanfx
+  - mgencur
+  - mvinkler
+  - bbrowning
+  - jcrossley3
+  - bobmcwhirter
+  - markusthoemmes
+  - vdemeester
+  - evanchooly
+  - arilivigni
+  - matzew
+  - lberk
+  - syedriko
+  - alanconway
