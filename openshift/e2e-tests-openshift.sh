@@ -5,9 +5,8 @@ source $(dirname $0)/release/resolve.sh
 
 set -x
 
-readonly BUILD_VERSION=v0.4.0
-readonly BUILD_RELEASE=https://github.com/knative/build/releases/download/${BUILD_VERSION}/build.yaml
-readonly SERVING_VERSION=v0.6.0
+readonly SERVING_VERSION=v0.7.1
+readonly EVENTING_KAFKA_VERSION=v0.7.1
 
 readonly K8S_CLUSTER_OVERRIDE=$(oc config current-context | awk -F'/' '{print $2}')
 readonly API_SERVER=$(oc config view --minify | grep server | awk -F'//' '{print $2}' | awk -F':' '{print $1}')
@@ -33,18 +32,19 @@ function timeout_non_zero() {
   return 0
 }
 
+function install_strimzi(){
+  strimzi_version=`curl https://github.com/strimzi/strimzi-kafka-operator/releases/latest |  awk -F 'tag/' '{print $2}' | awk -F '"' '{print $1}' 2>/dev/null`
+  header_text "Strimzi install"
+  kubectl create namespace kafka
+  curl -L "https://github.com/strimzi/strimzi-kafka-operator/releases/download/${strimzi_version}/strimzi-cluster-operator-${strimzi_version}.yaml" \
+  | sed 's/namespace: .*/namespace: kafka/' \
+  | kubectl -n kafka apply -f -
 
-function install_knative_build(){
-  header "Installing Knative Build"
+  header_text "Applying Strimzi Cluster file"
+  kubectl -n kafka apply -f "https://raw.githubusercontent.com/strimzi/strimzi-kafka-operator/${strimzi_version}/examples/kafka/kafka-persistent-single.yaml"
 
-  oc adm policy add-scc-to-user anyuid -z build-controller -n knative-build
-  oc adm policy add-cluster-role-to-user cluster-admin -z build-controller -n knative-build
-  oc adm policy add-cluster-role-to-user cluster-admin -z build-pipeline-controller -n knative-build-pipeline
-
-  oc apply -f $BUILD_RELEASE
-
-  wait_until_pods_running knative-build || return 1
-  header "Knative Build installed successfully"
+  header_text "Waiting for Strimzi to become ready"
+  sleep 5; while echo && kubectl get pods -n kafka | grep -v -E "(Running|Completed|STATUS)"; do sleep 5; done
 }
 
 function install_knative_serving(){
@@ -56,7 +56,7 @@ function install_knative_serving(){
   wait_until_pods_running $OLM_NAMESPACE
 
   # Deploy Knative Operators Serving
-  deploy_knative_operator serving KnativeServing
+  deploy_knative_core_operator serving KnativeServing
 
   # Wait for 6 pods to appear first
   timeout_non_zero 900 '[[ $(oc get pods -n $SERVING_NAMESPACE --no-headers | wc -l) -lt 6 ]]' || return 1
@@ -71,7 +71,7 @@ function install_knative_serving(){
   header "Knative Serving Installed successfully"
 }
 
-function deploy_knative_operator(){
+function deploy_knative_core_operator(){
   local COMPONENT="knative-$1"
   local API_GROUP=$1
   local KIND=$2
@@ -104,18 +104,50 @@ function deploy_knative_operator(){
 	  name: ${COMPONENT}-operator
 	  channel: alpha
 	EOF
+}
 
-  # # Wait until the server knows about the Install CRD before creating
-  # # an instance of it below
-  # timeout_non_zero 60 '[[ $(oc get crd knative${API_GROUP}s.${API_GROUP}.knative.dev -o jsonpath="{.status.acceptedNames.kind}" | grep -c $KIND) -eq 0 ]]' || return 1
+function deploy_knative_kafka_operator(){
+  local NAMESPACE="knative-eventing"
+  local COMPONENT="knative-$1"
+  local API_GROUP="eventing"
+  local KIND=$2
+
+  if oc get crd operatorgroups.operators.coreos.com >/dev/null 2>&1; then
+    cat <<-EOF | oc apply -f -
+	apiVersion: operators.coreos.com/v1
+	kind: OperatorGroup
+	metadata:
+	  name: ${NAMESPACE}
+	  namespace: ${NAMESPACE}
+	EOF
+  fi
+  cat <<-EOF | oc apply -f -
+	apiVersion: operators.coreos.com/v1alpha1
+	kind: Subscription
+	metadata:
+	  name: ${COMPONENT}-subscription
+	  generateName: ${COMPONENT}-
+	  namespace: ${NAMESPACE}
+	spec:
+	  source: ${COMPONENT}-operator
+	  sourceNamespace: $OLM_NAMESPACE
+	  name: ${COMPONENT}-operator
+	  channel: alpha
+	EOF
+
+  # Wait until the server knows about the Install CRD before creating
+  # an instance of it below
+  timeout_non_zero 60 '[[ $(oc get crd knative${API_GROUP}s.${API_GROUP}.knative.dev -o jsonpath="{.status.acceptedNames.kind}" | grep -c $KIND) -eq 0 ]]' || return 1
   
-  # cat <<-EOF | oc apply -f -
-  # apiVersion: ${API_GROUP}.knative.dev/v1alpha1
-  # kind: $KIND
-  # metadata:
-  #   name: ${COMPONENT}
-  #   namespace: ${COMPONENT}
-	# EOF
+  cat <<-EOF | oc apply -f -
+  apiVersion: ${API_GROUP}.knative.dev/v1alpha1
+  kind: $KIND
+  metadata:
+    name: ${COMPONENT}-eventing
+    namespace: ${NAMESPACE}
+  spec:
+    bootstrapServers: my-cluster-kafka-bootstrap.kafka:9092
+	EOF
 }
 
 function install_knative_eventing(){
@@ -132,7 +164,7 @@ function install_knative_eventing(){
   wait_until_pods_running $OLM_NAMESPACE
 
   # Deploy Knative Operators Eventing
-  deploy_knative_operator eventing KnativeEventing
+  deploy_knative_core_operator eventing KnativeEventing
 
   # Create imagestream for images generated in CI namespace
   tag_core_images openshift/release/knative-eventing-ci.yaml
@@ -142,6 +174,32 @@ function install_knative_eventing(){
   wait_until_pods_running $EVENTING_NAMESPACE || return 1
 
 }
+
+function install_knative_kafka_eventing(){
+  header "Installing Knative Kafka Eventing"
+
+  echo ">> Patching Knative Kafka Eventing CatalogSource to reference CI produced images"
+  CURRENT_GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+  RELEASE_YAML="https://raw.githubusercontent.com/openshift/knative-eventing/${CURRENT_GIT_BRANCH}/openshift/release/knative-eventing-kafka-ci.yaml"
+  sed "s|--filename=.*|--filename=${RELEASE_YAML}|"  openshift/olm/knative-kafka-eventing.catalogsource.yaml > knative-kafka-eventing.catalogsource-ci.yaml
+
+  # Install CatalogSources in OLM namespace
+  oc apply -n $OLM_NAMESPACE -f knative-kafka-eventing.catalogsource-ci.yaml
+  timeout_non_zero 900 '[[ $(oc get pods -n $OLM_NAMESPACE | grep -c knative-eventing) -eq 0 ]]' || return 1
+  wait_until_pods_running $OLM_NAMESPACE
+
+  # Deploy Knative Operators Eventing
+  deploy_knative_kafka_operator kafka KnativeKafkaEventing
+
+  # Create imagestream for images generated in CI namespace
+  tag_core_images openshift/release/knative-eventing-kafka-ci.yaml
+
+  # Wait for 6 pods to appear first
+  timeout_non_zero 900 '[[ $(oc get pods -n $EVENTING_NAMESPACE --no-headers | wc -l) -lt 6 ]]' || return 1
+  wait_until_pods_running $EVENTING_NAMESPACE || return 1
+
+}
+
 
 function create_test_resources() {
   echo ">> Ensuring pods in test namespaces can access test images"
@@ -214,6 +272,18 @@ function run_e2e_tests(){
     ${options} || return 1
 }
 
+function delete_strimzi(){
+
+  strimzi_version=`curl https://github.com/strimzi/strimzi-kafka-operator/releases/latest |  awk -F 'tag/' '{print $2}' | awk -F '"' '{print $1}' 2>/dev/null`
+
+  header_text "Delete Strimzi Cluster"
+  kubectl -n kafka delete -f "https://raw.githubusercontent.com/strimzi/strimzi-kafka-operator/${strimzi_version}/examples/kafka/kafka-persistent-single.yaml"
+
+  header_text "remove Strimzi"
+  kubectl -n kafka delete -f "https://github.com/strimzi/strimzi-kafka-operator/releases/download/${strimzi_version}/strimzi-cluster-operator-${strimzi_version}.yaml"
+  kubectl delete namespace kafka
+}
+
 function delete_istio_openshift(){
   echo ">> Bringing down Istio"
   oc delete ControlPlane/minimal-istio -n istio-system
@@ -222,11 +292,6 @@ function delete_istio_openshift(){
 function delete_serving_openshift() {
   echo ">> Bringing down Serving"
   oc delete --ignore-not-found=true -f $SERVING_RELEASE
-}
-
-function delete_build_openshift() {
-  echo ">> Bringing down Build"
-  oc delete --ignore-not-found=true -f $BUILD_RELEASE
 }
 
 function delete_knative_eventing(){
@@ -244,8 +309,8 @@ function teardown() {
   delete_in_memory_channel_provisioner
   delete_knative_eventing
   delete_serving_openshift
-  delete_build_openshift
   delete_istio_openshift
+  delete_strimzi
 }
 
 function tag_test_images() {
@@ -327,7 +392,7 @@ create_test_namespace || exit 1
 
 failed=0
 
-(( !failed )) && install_knative_build || failed=1
+(( !failed )) && install_strimzi || failed=1
 
 (( !failed )) && install_knative_serving || failed=1
 

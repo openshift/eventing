@@ -1,0 +1,679 @@
+---
+apiVersion: eventing.knative.dev/v1alpha1
+kind: ClusterChannelProvisioner
+metadata:
+  name: kafka
+spec: {}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kafka-channel-controller
+  namespace: knative-eventing
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: kafka-channel-controller
+rules:
+  - apiGroups:
+      - eventing.knative.dev
+    resources:
+      - channels
+      - channels/status
+      - clusterchannelprovisioners
+      - clusterchannelprovisioners/status
+    verbs:
+      - get
+      - list
+      - watch
+      - update
+  - apiGroups:
+      - eventing.knative.dev
+    resources:
+      - channels/finalizers
+      - clusterchannelprovisioners/finalizers
+    verbs:
+      - update
+  - apiGroups:
+      - "" # Core API group.
+    resources:
+      - services
+      - configmaps
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+  - apiGroups:
+      - "" # Core API group.
+    resources:
+      - services
+    verbs:
+      - update
+  - apiGroups:
+      - "" # Core API Group.
+    resources:
+      - configmaps
+    resourceNames:
+      - kafka-channel-dispatcher
+    verbs:
+      - update
+  - apiGroups:
+      - "" # Core API Group.	
+    resources:
+      - events	
+    verbs:
+      - create	
+      - patch	
+      - update
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kafka-channel-controller-manage
+subjects:
+  - kind: ServiceAccount
+    name: kafka-channel-controller
+    namespace: knative-eventing
+roleRef:
+  kind: ClusterRole
+  name: kafka-channel-controller
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kafka-channel-controller-config
+  namespace: knative-eventing
+data:
+  bootstrapServers: REPLACE_WITH_CLUSTER_URL
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka-channel-controller
+  namespace: knative-eventing
+spec:
+  replicas: 1
+  selector:
+    matchLabels: &labels
+      app: kafka-channel-controller
+  template:
+    metadata:
+      labels: *labels
+    spec:
+      serviceAccountName: kafka-channel-controller
+      containers:
+      - name: kafka-channel-controller-controller
+        image: image-registry.openshift-image-registry.svc:5000/knative-eventing/knative-eventing-kafka-channel-controller
+        volumeMounts:
+          - name: kafka-channel-controller-config
+            mountPath: /etc/config-provisioner
+        env:
+        - name: SYSTEM_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+      volumes:
+        - name: kafka-channel-controller-config
+          configMap:
+            name: kafka-channel-controller-config
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kafka-channel-dispatcher
+  namespace: knative-eventing
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kafka-channel-dispatcher
+rules:
+  - apiGroups:
+      - "" # Core API group.
+    resources:
+      - configmaps
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - eventing.knative.dev
+    resources:
+      - channels
+    verbs:
+      - list
+      - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kafka-channel-dispatcher
+subjects:
+  - kind: ServiceAccount
+    name: kafka-channel-dispatcher
+    namespace: knative-eventing
+roleRef:
+  kind: ClusterRole
+  name: kafka-channel-dispatcher
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka-channel-dispatcher
+  namespace: knative-eventing
+spec:
+  replicas: 1
+  selector:
+    matchLabels: &labels
+      clusterChannelProvisioner: kafka
+      role: dispatcher
+  template:
+    metadata:
+      labels: *labels
+    spec:
+      serviceAccountName: kafka-channel-dispatcher
+      containers:
+        - name: dispatcher
+          image: image-registry.openshift-image-registry.svc:5000/knative-eventing/knative-eventing-kafka-channel-dispatcher
+          env:
+            - name: SYSTEM_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          volumeMounts:
+            - name: kafka-channel-controller-config
+              mountPath: /etc/config-provisioner
+      volumes:
+        - name: kafka-channel-controller-config
+          configMap:
+            name: kafka-channel-controller-config
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kafka-channelable-manipulator
+  labels:
+    duck.knative.dev/channelable: "true"
+rules:
+  - apiGroups:
+      - messaging.knative.dev
+    resources:
+      - kafkachannels
+      - kafkachannels/status
+    verbs:
+      - create
+      - get
+      - list
+      - watch
+      - update
+      - patch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kafka-ch-controller
+rules:
+  - apiGroups:
+      - messaging.knative.dev
+    resources:
+      - kafkachannels
+      - kafkachannels/status
+    verbs:
+      - get
+      - list
+      - watch
+      - update
+      - patch
+  - apiGroups:
+      - messaging.knative.dev
+    resources:
+      - kafkachannels/finalizers
+    verbs:
+      - update
+  - apiGroups:
+      - "" # Core API group.
+    resources:
+      - services
+      - configmaps
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+  - apiGroups:
+      - "" # Core API group.
+    resources:
+      - services
+    verbs:
+      - update
+  - apiGroups:
+      - "" # Core API Group.
+    resources:
+      - configmaps
+    resourceNames:
+      - kafka-ch-dispatcher
+    verbs:
+      - update
+  - apiGroups:
+      - "" # Core API Group.
+    resources:
+      - events
+    verbs:
+      - create
+      - patch
+      - update
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - "" # Core API group.
+    resources:
+      - endpoints
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - apps
+    resources:
+      - deployments
+      - deployments/status
+    verbs:
+      - get
+      - list
+      - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kafka-ch-dispatcher
+rules:
+  - apiGroups:
+      - messaging.knative.dev
+    resources:
+      - kafkachannels
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - messaging.knative.dev
+    resources:
+      - kafkachannels/status
+    verbs:
+      - get
+      - update
+  - apiGroups:
+      - "" # Core API group.
+    resources:
+      - configmaps
+    verbs:
+      - get
+      - list
+      - watch
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka-ch-dispatcher
+  namespace: knative-eventing
+  labels:
+      messaging.knative.dev/channel: kafka-channel
+      messaging.knative.dev/role: dispatcher
+spec:
+  selector:
+      messaging.knative.dev/channel: kafka-channel
+      messaging.knative.dev/role: dispatcher
+  ports:
+    - port: 80
+      protocol: TCP
+      targetPort: 8080
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kafka-ch-controller
+  namespace: knative-eventing
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kafka-ch-dispatcher
+  namespace: knative-eventing
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kafka-webhook
+  namespace: knative-eventing
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kafka-webhook
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - "configmaps"
+    verbs:
+      - "get"
+      - "list"
+      - "watch"
+  - apiGroups:
+      - ""
+    resources:
+      - "secrets"
+    verbs:
+      - "get"
+      - "create"
+  - apiGroups:
+      - "apps"
+    resources:
+      - "deployments"
+    verbs:
+      - "get"
+  - apiGroups:
+      - "apps"
+    resources:
+      - "deployments/finalizers"
+    verbs:
+      - update
+  - apiGroups:
+      - "admissionregistration.k8s.io"
+    resources:
+      - "mutatingwebhookconfigurations"
+    verbs:
+      - "get"
+      - "list"
+      - "create"
+      - "update"
+      - "delete"
+      - "patch"
+      - "watch"
+  - apiGroups:
+      - "messaging.knative.dev"
+    resources:
+      - "kafkachannels"
+      - "kafkachannels/status"
+    verbs:
+      - "get"
+      - "list"
+      - "watch"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kafka-ch-controller
+subjects:
+  - kind: ServiceAccount
+    name: kafka-ch-controller
+    namespace: knative-eventing
+roleRef:
+  kind: ClusterRole
+  name: kafka-ch-controller
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kafka-ch-dispatcher
+subjects:
+  - kind: ServiceAccount
+    name: kafka-ch-dispatcher
+    namespace: knative-eventing
+roleRef:
+  kind: ClusterRole
+  name: kafka-ch-dispatcher
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kafka-webhook
+subjects:
+  - kind: ServiceAccount
+    name: kafka-webhook
+    namespace: knative-eventing
+roleRef:
+  kind: ClusterRole
+  name: kafka-webhook
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+ name: kafkachannels.messaging.knative.dev
+ labels:
+    knative.dev/crd-install: "true"
+    messaging.knative.dev/subscribable: "true"
+spec:
+  group: messaging.knative.dev
+  version: v1alpha1
+  names:
+    kind: KafkaChannel
+    plural: kafkachannels
+    singular: kafkachannel
+    categories:
+    - all
+    - knative
+    - messaging
+    - channel
+    shortNames:
+    - kc
+  scope: Namespaced
+  subresources:
+    status: {}
+  additionalPrinterColumns:
+    - name: Ready
+      type: string
+      JSONPath: ".status.conditions[?(@.type==\"Ready\")].status"
+    - name: Reason
+      type: string
+      JSONPath: ".status.conditions[?(@.type==\"Ready\")].reason"
+    - name: Hostname
+      type: string
+      JSONPath: .status.address.hostname
+    - name: Age
+      type: date
+      JSONPath: .metadata.creationTimestamp
+  validation:
+    openAPIV3Schema:
+      properties:
+        spec:
+          properties:
+            numPartitions:
+              format: int32
+              type: integer
+              description: "Number of partitions of a Kafka topic."
+            replicationFactor:
+              format: int16
+              type: integer
+              description: "Replication factor of a Kafka topic."
+            subscribable:
+              type: object
+              properties:
+                subscribers:
+                  type: array
+                  description: "The list of subscribers that have expressed interest in receiving events from this channel."
+                  items:
+                    required:
+                      - uid
+                    properties:
+                      ref:
+                        type: object
+                        required:
+                          - namespace
+                          - name
+                          - uid
+                        properties:
+                          apiVersion:
+                            type: string
+                          kind:
+                            type: string
+                          name:
+                            type: string
+                            minLength: 1
+                          namespace:
+                            type: string
+                            minLength: 1
+                          uid:
+                            type: string
+                            minLength: 1
+                      uid:
+                        type: string
+                        minLength: 1
+                      subscriberURI:
+                        type: string
+                        minLength: 1
+                      replyURI:
+                        type: string
+                        minLength: 1
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config-kafka
+  namespace: knative-eventing
+data:
+  bootstrapServers: REPLACE_WITH_CLUSTER_URL
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    role: kafka-webhook
+  name: kafka-webhook
+  namespace: knative-eventing
+spec:
+  ports:
+    - port: 443
+      targetPort: 8443
+  selector:
+    role: kafka-webhook
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka-ch-controller
+  namespace: knative-eventing
+spec:
+  replicas: 1
+  selector:
+    matchLabels: &labels
+      messaging.knative.dev/channel: kafka-channel
+      messaging.knative.dev/role: controller
+  template:
+    metadata:
+      labels: *labels
+    spec:
+      serviceAccountName: kafka-ch-controller
+      containers:
+        - name: controller
+          image: image-registry.openshift-image-registry.svc:5000/knative-eventing/knative-eventing-kafka-channel-crd-controller
+          env:
+          - name: CONFIG_LOGGING_NAME
+            value: config-logging
+          - name: SYSTEM_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          volumeMounts:
+            - name: config-logging
+              mountPath: /etc/config-logging
+            - name: config-kafka
+              mountPath: /etc/config-kafka
+      volumes:
+        - name: config-logging
+          configMap:
+            name: config-logging
+        - name: config-kafka
+          configMap:
+            name: config-kafka
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka-ch-dispatcher
+  namespace: knative-eventing
+spec:
+  replicas: 1
+  selector:
+    matchLabels: &labels
+      messaging.knative.dev/channel: kafka-channel
+      messaging.knative.dev/role: dispatcher
+  template:
+    metadata:
+      labels: *labels
+    spec:
+      serviceAccountName: kafka-ch-dispatcher
+      containers:
+        - name: dispatcher
+          image: image-registry.openshift-image-registry.svc:5000/knative-eventing/knative-eventing-kafka-channel-crd-dispatcher
+          env:
+            - name: CONFIG_LOGGING_NAME
+              value: config-logging
+            - name: SYSTEM_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          volumeMounts:
+            - name: config-logging
+              mountPath: /etc/config-logging
+            - name: config-kafka
+              mountPath: /etc/config-kafka
+      volumes:
+        - name: config-logging
+          configMap:
+            name: config-logging
+        - name: config-kafka
+          configMap:
+            name: config-kafka
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka-webhook
+  namespace: knative-eventing
+spec:
+  replicas: 1
+  selector:
+    matchLabels: &labels
+      app: kafka-webhook
+      role: kafka-webhook
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/inject: "false"
+      labels: *labels
+    spec:
+      serviceAccountName: kafka-webhook
+      containers:
+      - name: kafka-webhook
+        terminationMessagePolicy: FallbackToLogsOnError
+        image: image-registry.openshift-image-registry.svc:5000/knative-eventing/knative-eventing-kafka-channel-crd-webhook
+        volumeMounts:
+        - name: config-logging
+          mountPath: /etc/config-logging
+        env:
+        - name: SYSTEM_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: CONFIG_LOGGING_NAME
+          value: config-logging
+        - name: WEBHOOK_NAME
+          value: kafka-webhook
+      volumes:
+        - name: config-logging
+          configMap:
+            name: config-logging
