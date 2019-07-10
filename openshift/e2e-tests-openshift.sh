@@ -234,7 +234,7 @@ function tag_core_images(){
   echo ">> Creating imagestream tags for images referenced in yaml files"
   IMAGE_NAMES=$(cat $resolved_file_name | grep -i "image:\|value:" | grep "$INTERNAL_REGISTRY" | awk '{print $2}' | awk -F '/' '{print $3}')
   for name in $IMAGE_NAMES; do
-    tag_built_image ${name} ${name} latest
+    tag_built_image ${name} ${name} ci
   done
 }
 
