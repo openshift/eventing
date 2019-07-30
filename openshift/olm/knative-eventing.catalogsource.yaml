@@ -257,7 +257,7 @@ data:
           name: Knative team
         maturity: alpha
         provider:
-          name: Knative Community
+          name: Red Hat
         version: 0.6.0
     - apiVersion: operators.coreos.com/v1alpha1
       kind: ClusterServiceVersion
@@ -267,7 +267,7 @@ data:
           capabilities: Basic Install
           categories: Networking,Integration & Delivery,Cloud Provider,Developer Tools
           certified: "false"
-          containerImage: quay.io/openshift-knative/knative-eventing-operator:v0.7.0
+          containerImage: quay.io/openshift-knative/knative-eventing-operator:v0.7.1
           createdAt: "2019-05-07T17:00:00Z"
           description: |-
             Knative Eventing is a system that is designed to address a
@@ -276,7 +276,7 @@ data:
             consumers.
           repository: https://github.com/openshift-knative/knative-eventing-operator
           support: Red Hat
-        name: knative-eventing-operator.v0.7.0
+        name: knative-eventing-operator.v0.7.1
         namespace: placeholder
       spec:
         apiservicedefinitions: {}
@@ -340,16 +340,15 @@ data:
                       - knative-eventing-operator
                       env:
                       - name: WATCH_NAMESPACE
-                        valueFrom:
-                          fieldRef:
-                            fieldPath: metadata.annotations['olm.targetNamespaces']
                       - name: POD_NAME
                         valueFrom:
                           fieldRef:
                             fieldPath: metadata.name
                       - name: OPERATOR_NAME
                         value: knative-eventing-operator
-                      image: quay.io/openshift-knative/knative-eventing-operator:v0.7.0
+                      image: quay.io/openshift-knative/knative-eventing-operator:v0.7.1
+                      args:
+                        - --filename=https://raw.githubusercontent.com/openshift/knative-eventing/release-v0.7.1/openshift/release/knative-eventing-v0.7.1.yaml
                       imagePullPolicy: Always
                       name: knative-eventing-operator
                       resources: {}
@@ -430,14 +429,14 @@ data:
           name: Knative team
         maturity: alpha
         provider:
-          name: Knative Community
+          name: Red Hat
         replaces: knative-eventing-operator.v0.6.0
-        version: 0.7.0
+        version: 0.7.1
   packages: |-
     - packageName: knative-eventing-operator
       channels:
       - name: alpha
-        currentCSV: knative-eventing-operator.v0.7.0
+        currentCSV: knative-eventing-operator.v0.7.1
 ---
 apiVersion: operators.coreos.com/v1alpha1
 kind: CatalogSource
