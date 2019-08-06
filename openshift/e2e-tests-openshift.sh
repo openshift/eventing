@@ -159,9 +159,6 @@ function install_knative_eventing(){
   timeout_non_zero 900 '[[ $(oc get pods -n $EVENTING_NAMESPACE --no-headers | wc -l) -lt 6 ]]' || return 1
   wait_until_pods_running $EVENTING_NAMESPACE || return 1
 
-  # Assert that there are no images used that are not CI images (which should all be using the $INTERNAL_REGISTRY)
-  # (except for the knative-eventing-operator)
-  #oc get pod -n knative-eventing -o yaml | grep image: | grep -v knative-eventing-operator | grep -v ${INTERNAL_REGISTRY} && return 1 || true
 }
 
 function create_test_resources() {
