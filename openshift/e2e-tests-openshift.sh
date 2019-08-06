@@ -227,7 +227,7 @@ function run_e2e_tests(){
   options=""
   (( EMIT_METRICS )) && options="-emitmetrics"
   report_go_test \
-    -v -tags=e2e -count=1 -timeout=20m -short -parallel=1 \
+    -v -tags=e2e -count=1 -timeout=35m -short -parallel=1 \
     ./test/e2e \
     --kubeconfig $KUBECONFIG \
     --dockerrepo ${INTERNAL_REGISTRY}/${EVENTING_NAMESPACE} \
