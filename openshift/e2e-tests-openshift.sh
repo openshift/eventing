@@ -166,8 +166,6 @@ function create_test_resources() {
   oc policy add-role-to-group system:image-puller system:serviceaccounts --namespace=$EVENTING_NAMESPACE
 
   echo ">> Ensure serviceaccounts are manually created"
-  oc -n default create serviceaccount eventing-broker-ingress
-  oc -n default create serviceaccount eventing-broker-filter
 
   echo ">> Creating imagestream tags for all test images"
   tag_test_images test/test_images
@@ -178,6 +176,8 @@ function create_test_resources() {
   # process array to create the NS and give SCC
   for i in "${testNamesArray[@]}"
   do
+    oc create serviceaccount eventing-broker-ingress -n $i
+    oc create serviceaccount eventing-broker-filter -n $i
     oc adm policy add-scc-to-user anyuid -z default -n $i
     oc adm policy add-scc-to-user privileged -z default -n $i
     oc adm policy add-scc-to-user anyuid -z eventing-broker-filter -n $i
