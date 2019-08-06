@@ -149,6 +149,10 @@ function create_test_resources() {
   echo ">> Ensuring pods in test namespaces can access test images"
   oc policy add-role-to-group system:image-puller system:serviceaccounts --namespace=$EVENTING_NAMESPACE
 
+  echo ">> Ensure serviceaccounts are manually created"
+  oc -n default create serviceaccount eventing-broker-ingress
+  oc -n default create serviceaccount eventing-broker-filter
+
   echo ">> Creating imagestream tags for all test images"
   tag_test_images test/test_images
 
