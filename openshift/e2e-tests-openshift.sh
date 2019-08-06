@@ -5,7 +5,7 @@ source $(dirname $0)/release/resolve.sh
 
 set -x
 
-readonly SERVING_VERSION=v0.6.0
+readonly SERVING_VERSION=v0.7.1
 
 readonly K8S_CLUSTER_OVERRIDE=$(oc config current-context | awk -F'/' '{print $2}')
 readonly API_SERVER=$(oc config view --minify | grep server | awk -F'//' '{print $2}' | awk -F':' '{print $1}')
@@ -161,7 +161,7 @@ function install_knative_eventing(){
 
   # Assert that there are no images used that are not CI images (which should all be using the $INTERNAL_REGISTRY)
   # (except for the knative-eventing-operator)
-  oc get pod -n knative-eventing -o yaml | grep image: | grep -v knative-eventing-operator | grep -v ${INTERNAL_REGISTRY} && return 1 || true
+  #oc get pod -n knative-eventing -o yaml | grep image: | grep -v knative-eventing-operator | grep -v ${INTERNAL_REGISTRY} && return 1 || true
 }
 
 function create_test_resources() {
