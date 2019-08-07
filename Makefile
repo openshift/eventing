@@ -11,11 +11,6 @@ install:
 	go build -o $(GOPATH)/bin/imc-dispatcher ./cmd/in_memory/channel_dispatcher
 	go build -o $(GOPATH)/bin/in-memory-channel-controller ./cmd/in_memory/controller
 	go build -o $(GOPATH)/bin/in-memory-channel-dispatcher ./cmd/in_memory/dispatcher
-	go build -o $(GOPATH)/bin/kafka-channel-controller ./contrib/kafka/cmd/controller
-	go build -o $(GOPATH)/bin/kafka-channel-dispatcher ./contrib/kafka/cmd/dispatcher
-	go build -o $(GOPATH)/bin/kafka-channel-crd-controller ./contrib/kafka/cmd/channel_controller
-	go build -o $(GOPATH)/bin/kafka-channel-crd-dispatcher ./contrib/kafka/cmd/channel_dispatcher
-	go build -o $(GOPATH)/bin/kafka-channel-crd-webhook ./contrib/kafka/cmd/webhook
 .PHONY: install
 
 test-install:
@@ -44,11 +39,6 @@ generate-dockerfiles:
 	./openshift/ci-operator/generate-dockerfiles.sh openshift/ci-operator/knative-images imc-dispatcher
 	./openshift/ci-operator/generate-dockerfiles.sh openshift/ci-operator/knative-images in-memory-channel-controller
 	./openshift/ci-operator/generate-dockerfiles.sh openshift/ci-operator/knative-images in-memory-channel-dispatcher
-	./openshift/ci-operator/generate-dockerfiles.sh openshift/ci-operator/knative-images kafka-channel-controller
-	./openshift/ci-operator/generate-dockerfiles.sh openshift/ci-operator/knative-images kafka-channel-dispatcher
-	./openshift/ci-operator/generate-dockerfiles.sh openshift/ci-operator/knative-images kafka-channel-crd-controller
-	./openshift/ci-operator/generate-dockerfiles.sh openshift/ci-operator/knative-images kafka-channel-crd-dispatcher
-	./openshift/ci-operator/generate-dockerfiles.sh openshift/ci-operator/knative-images kafka-channel-crd-webhook
 	./openshift/ci-operator/generate-dockerfiles.sh openshift/ci-operator/knative-test-images $(TEST_IMAGES)
 .PHONY: generate-dockerfiles
 
@@ -57,11 +47,8 @@ generate-release:
 	./openshift/release/generate-release.sh $(RELEASE)
 .PHONY: generate-release
 
-generate-kafka:
-	./openshift/release/generate-kafka.sh $(RELEASE)
-.PHONY: generate-kafka
-
 # Generates a ci-operator configuration for a specific branch.
 generate-ci-config:
-	./openshift/ci-operator/generate-ci-config.sh $(BRANCH) > ci-operator-config.yaml
+	./openshift/ci-operator/generate-ci-config.sh $(BRANCH) 4.1 > ci-operator-config_41.yaml
+	./openshift/ci-operator/generate-ci-config.sh $(BRANCH) 4.2 > ci-operator-config_42.yaml
 .PHONY: generate-ci-config

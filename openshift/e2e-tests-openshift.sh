@@ -177,6 +177,8 @@ function create_test_resources() {
   # process array to create the NS and give SCC
   for i in "${testNamesArray[@]}"
   do
+    oc create serviceaccount eventing-broker-ingress -n $i
+    oc create serviceaccount eventing-broker-filter -n $i
     oc adm policy add-scc-to-user anyuid -z default -n $i
     oc adm policy add-scc-to-user privileged -z default -n $i
     oc adm policy add-scc-to-user anyuid -z eventing-broker-filter -n $i
@@ -227,14 +229,12 @@ function create_test_namespace(){
 
 function run_e2e_tests(){
   header "Running tests"
-  options=""
-  (( EMIT_METRICS )) && options="-emitmetrics"
   report_go_test \
-    -v -tags=e2e -count=1 -timeout=20m -short -parallel=1 \
+    -v -tags=e2e -count=1 -timeout=35m -parallel=1 \
     ./test/e2e \
-    --kubeconfig $KUBECONFIG \
-    --dockerrepo ${INTERNAL_REGISTRY}/${EVENTING_NAMESPACE} \
-    ${options} || return 1
+    --kubeconfig "$KUBECONFIG" \
+    --dockerrepo "${INTERNAL_REGISTRY}/${EVENTING_NAMESPACE}" \
+    ${options} || failed=1
 }
 
 function delete_strimzi(){
