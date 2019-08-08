@@ -18,22 +18,22 @@ function resolve_resources(){
     # 2. Rewrite image references
     # 3. Remove comment lines
     # 3. Remove empty lines
-    sed -e "s+\(.* image: \)\(github.com\)\(.*/\)\(test/\)\(.*\)+\1\2 \3\4test-\5+g" \
-        -e "s+github.com/knative/eventing/cmd/broker/ingress+${image_prefix}ingress${image_tag}+" \
-        -e "s+github.com/knative/eventing/cmd/broker/filter+${image_prefix}filter${image_tag}+" \
-        -e "s+github.com/knative/eventing/cmd/in_memory/controller+${image_prefix}in-memory-channel-controller${image_tag}+" \
-        -e "s+github.com/knative/eventing/cmd/in_memory/dispatcher+${image_prefix}in-memory-channel-dispatcher${image_tag}+" \
-        -e "s+github.com/knative/eventing/contrib/kafka/cmd/controller+${image_prefix}kafka-channel-controller${image_tag}+" \
-        -e "s+github.com/knative/eventing/contrib/kafka/cmd/dispatcher+${image_prefix}kafka-channel-dispatcher${image_tag}+" \
-        -e "s+github.com/knative/eventing/contrib/kafka/cmd/channel_controller+${image_prefix}kafka-channel-crd-controller${image_tag}+" \
-        -e "s+github.com/knative/eventing/contrib/kafka/cmd/channel_dispatcher+${image_prefix}kafka-channel-crd-dispatcher${image_tag}+" \
-        -e "s+github.com/knative/eventing/contrib/kafka/cmd/webhook+${image_prefix}kafka-channel-crd-webhook${image_tag}+" \
-        -e "s+github.com/knative/eventing/cmd/in_memory/channel_controller+${image_prefix}imc-controller${image_tag}+" \
-        -e "s+github.com/knative/eventing/cmd/in_memory/channel_dispatcher+${image_prefix}imc-dispatcher${image_tag}+" \
-        -e "s+github.com/knative/eventing/cmd/sources_controller+${image_prefix}sources-controller${image_tag}+" \
-        -e "s+github.com/knative/eventing/cmd/cronjob_receive_adapter+${image_prefix}cronjob-receive-adapter${image_tag}+" \
-        -e "s+github.com/knative/eventing/cmd/apiserver_receive_adapter+${image_prefix}apiserver-receive-adapter${image_tag}+" \
-        -e "s+\(.* image: \)\(github.com\)\(.*/\)\(.*\)+\1${image_prefix}\4${image_tag}+g" \
+    sed -e "s+\(.* image: \)\(knative.dev\)\(.*/\)\(test/\)\(.*\)+\1\2 \3\4test-\5+g" \
+        -e "s+knative.dev/eventing/cmd/broker/ingress+${image_prefix}ingress${image_tag}+" \
+        -e "s+knative.dev/eventing/cmd/broker/filter+${image_prefix}filter${image_tag}+" \
+        -e "s+knative.dev/eventing/cmd/in_memory/controller+${image_prefix}in-memory-channel-controller${image_tag}+" \
+        -e "s+knative.dev/eventing/cmd/in_memory/dispatcher+${image_prefix}in-memory-channel-dispatcher${image_tag}+" \
+        -e "s+knative.dev/eventing/contrib/kafka/cmd/controller+${image_prefix}kafka-channel-controller${image_tag}+" \
+        -e "s+knative.dev/eventing/contrib/kafka/cmd/dispatcher+${image_prefix}kafka-channel-dispatcher${image_tag}+" \
+        -e "s+knative.dev/eventing/contrib/kafka/cmd/channel_controller+${image_prefix}kafka-channel-crd-controller${image_tag}+" \
+        -e "s+knative.dev/eventing/contrib/kafka/cmd/channel_dispatcher+${image_prefix}kafka-channel-crd-dispatcher${image_tag}+" \
+        -e "s+knative.dev/eventing/contrib/kafka/cmd/webhook+${image_prefix}kafka-channel-crd-webhook${image_tag}+" \
+        -e "s+knative.dev/eventing/cmd/in_memory/channel_controller+${image_prefix}imc-controller${image_tag}+" \
+        -e "s+knative.dev/eventing/cmd/in_memory/channel_dispatcher+${image_prefix}imc-dispatcher${image_tag}+" \
+        -e "s+knative.dev/eventing/cmd/sources_controller+${image_prefix}sources-controller${image_tag}+" \
+        -e "s+knative.dev/eventing/cmd/cronjob_receive_adapter+${image_prefix}cronjob-receive-adapter${image_tag}+" \
+        -e "s+knative.dev/eventing/cmd/apiserver_receive_adapter+${image_prefix}apiserver-receive-adapter${image_tag}+" \
+        -e "s+\(.* image: \)\(knative.dev\)\(.*/\)\(.*\)+\1${image_prefix}\4${image_tag}+g" \
         -e '/^[ \t]*#/d' \
         -e '/^[ \t]*$/d' \
         "$yaml" >> $resolved_file_name
