@@ -9,8 +9,6 @@ install:
 	go install $(CORE_IMAGES)
 	go build -o $(GOPATH)/bin/imc-controller ./cmd/in_memory/channel_controller
 	go build -o $(GOPATH)/bin/imc-dispatcher ./cmd/in_memory/channel_dispatcher
-	go build -o $(GOPATH)/bin/in-memory-channel-controller ./cmd/in_memory/controller
-	go build -o $(GOPATH)/bin/in-memory-channel-dispatcher ./cmd/in_memory/dispatcher
 .PHONY: install
 
 test-install:
@@ -37,8 +35,6 @@ generate-dockerfiles:
 	./openshift/ci-operator/generate-dockerfiles.sh openshift/ci-operator/knative-images $(CORE_IMAGES)
 	./openshift/ci-operator/generate-dockerfiles.sh openshift/ci-operator/knative-images imc-controller
 	./openshift/ci-operator/generate-dockerfiles.sh openshift/ci-operator/knative-images imc-dispatcher
-	./openshift/ci-operator/generate-dockerfiles.sh openshift/ci-operator/knative-images in-memory-channel-controller
-	./openshift/ci-operator/generate-dockerfiles.sh openshift/ci-operator/knative-images in-memory-channel-dispatcher
 	./openshift/ci-operator/generate-dockerfiles.sh openshift/ci-operator/knative-test-images $(TEST_IMAGES)
 .PHONY: generate-dockerfiles
 
