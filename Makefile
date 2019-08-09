@@ -49,6 +49,5 @@ generate-release:
 
 # Generates a ci-operator configuration for a specific branch.
 generate-ci-config:
-	./openshift/ci-operator/generate-ci-config.sh $(BRANCH) 4.1 > ci-operator-config_41.yaml
-	./openshift/ci-operator/generate-ci-config.sh $(BRANCH) 4.2 > ci-operator-config_42.yaml
+	./openshift/ci-operator/generate-ci-config.sh $(BRANCH) > ci-operator-config.yaml
 .PHONY: generate-ci-config

@@ -1,19 +1,18 @@
 #!/bin/bash
 
 branch=${1-'knative-v0.6.0'}
-openshift=${2-'4.2'}
 
 cat <<EOF
 tag_specification:
-  name: '$openshift'
+  name: '4.1'
   namespace: ocp
 promotion:
   cluster: https://api.ci.openshift.org
   namespace: openshift
-  name: $branch-ocp-${openshift//./}
+  name: $branch
 base_images:
   base:
-    name: '$openshift'
+    name: '4.1'
     namespace: ocp
     tag: base
 build_root:
@@ -23,7 +22,7 @@ canonical_go_repository: github.com/knative/eventing
 binary_build_commands: make install
 test_binary_build_commands: make test-install
 tests:
-- as: e2e-aws-ocp-${openshift//./}
+- as: e2e-aws
   commands: "make test-e2e"
   openshift_installer_src:
     cluster_profile: aws
