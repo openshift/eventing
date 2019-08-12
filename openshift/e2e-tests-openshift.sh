@@ -17,10 +17,14 @@ readonly TEST_ORIGIN_CONFORMANCE="${TEST_ORIGIN_CONFORMANCE:-"false"}"
 readonly SERVING_NAMESPACE=knative-serving
 readonly EVENTING_NAMESPACE=knative-eventing
 readonly TARGET_IMAGE_PREFIX="$INTERNAL_REGISTRY/$EVENTING_NAMESPACE/knative-eventing-"
-# TODO: Subscription.spec.sourceNamespace does not work on OCP v4.2. Need to revert after https://jira.coreos.com/browse/OLM-1190 is solved.
-readonly OLM_NAMESPACE_SERVING="knative-serving"
-readonly OLM_NAMESPACE_EVENTING="knative-eventing"
-#readonly OLM_NAMESPACE="openshift-operator-lifecycle-manager"
+
+# The OLM global namespace was moved to openshift-marketplace since v4.2
+# ref: https://jira.coreos.com/browse/OLM-1190
+if [ ${HOSTNAME} = "e2e-aws-ocp-41" ]; then
+  readonly OLM_NAMESPACE="openshift-operator-lifecycle-manager"
+else
+  readonly OLM_NAMESPACE="openshift-marketplace"
+fi
 
 env
 
@@ -55,9 +59,9 @@ function install_knative_serving(){
   create_knative_namespace serving
 
   # Install CatalogSources in OLM namespace
-  oc apply -n $OLM_NAMESPACE_SERVING -f https://raw.githubusercontent.com/openshift/knative-serving/release-${SERVING_VERSION}/openshift/olm/knative-serving.catalogsource.yaml
-  timeout_non_zero 900 '[[ $(oc get pods -n $OLM_NAMESPACE_SERVING | grep -c knative) -eq 0 ]]' || return 1
-  wait_until_pods_running $OLM_NAMESPACE_SERVING
+  oc apply -n $OLM_NAMESPACE -f https://raw.githubusercontent.com/openshift/knative-serving/release-${SERVING_VERSION}/openshift/olm/knative-serving.catalogsource.yaml
+  timeout_non_zero 900 '[[ $(oc get pods -n $OLM_NAMESPACE | grep -c knative) -eq 0 ]]' || return 1
+  wait_until_pods_running $OLM_NAMESPACE
 
   # Deploy Knative Operators Serving
   deploy_knative_operator serving KnativeServing
@@ -115,7 +119,7 @@ function deploy_knative_operator(){
 	  namespace: ${COMPONENT}
 	spec:
 	  source: ${COMPONENT}-operator
-	  sourceNamespace: $COMPONENT
+	  sourceNamespace: $OLM_NAMESPACE
 	  name: ${COMPONENT}-operator
 	  channel: alpha
 	EOF
@@ -145,9 +149,9 @@ function install_knative_eventing(){
   sed "s|--filename=.*|--filename=${RELEASE_YAML}|"  openshift/olm/knative-eventing.catalogsource.yaml > knative-eventing.catalogsource-ci.yaml
 
   # Install CatalogSources in OLM namespace
-  oc apply -n $OLM_NAMESPACE_EVENTING -f knative-eventing.catalogsource-ci.yaml
-  timeout_non_zero 900 '[[ $(oc get pods -n $OLM_NAMESPACE_EVENTING | grep -c knative-eventing) -eq 0 ]]' || return 1
-  wait_until_pods_running $OLM_NAMESPACE_EVENTING
+  oc apply -n $OLM_NAMESPACE -f knative-eventing.catalogsource-ci.yaml
+  timeout_non_zero 900 '[[ $(oc get pods -n $OLM_NAMESPACE | grep -c knative-eventing) -eq 0 ]]' || return 1
+  wait_until_pods_running $OLM_NAMESPACE
 
   # Deploy Knative Operators Eventing
   deploy_knative_operator eventing KnativeEventing
