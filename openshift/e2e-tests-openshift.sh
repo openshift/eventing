@@ -165,7 +165,7 @@ function install_knative_eventing(){
 
   # Assert that there are no images used that are not CI images (which should all be using the $INTERNAL_REGISTRY)
   # (except for the knative-eventing-operator)
-  #oc get pod -n knative-eventing -o yaml | grep image: | grep -v knative-eventing-operator | grep -v ${INTERNAL_REGISTRY} && return 1 || true
+  oc get pod -n knative-eventing -o yaml | grep image: | grep -v knative-eventing-operator | grep -v ${INTERNAL_REGISTRY} && return 1 || true
 }
 
 function create_test_resources() {
@@ -202,10 +202,8 @@ function tag_core_images(){
 
   echo ">> Creating imagestream tags for images referenced in yaml files"
   IMAGE_NAMES=$(cat $resolved_file_name | grep -i "image:\|value:" | grep "$INTERNAL_REGISTRY" | awk '{print $2}' | awk -F '/' '{print $3}')
-  for nametag in $IMAGE_NAMES; do
-    name=$(echo $nametag | cut -d: -f1)
-    tag=$(echo $nametag | cut -d: -f2)
-    tag_built_image ${name} ${name} ${tag}
+  for name in $IMAGE_NAMES; do
+    tag_built_image ${name} ${name}
   done
 }
 
