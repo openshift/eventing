@@ -1721,7 +1721,7 @@ spec:
       containers:
       - name: eventing-controller
         terminationMessagePolicy: FallbackToLogsOnError
-        image: image-registry.openshift-image-registry.svc:5000/knative-eventing/knative-eventing-controller:ci
+        image: image-registry.openshift-image-registry.svc:5000/knative-eventing/knative-eventing-controller
         env:
           - name: SYSTEM_NAMESPACE
             valueFrom:
@@ -1734,11 +1734,11 @@ spec:
           - name: METRICS_DOMAIN
             value: knative.dev/eventing
           - name: BROKER_INGRESS_IMAGE
-            value: image-registry.openshift-image-registry.svc:5000/knative-eventing/knative-eventing-ingress:ci
+            value: image-registry.openshift-image-registry.svc:5000/knative-eventing/knative-eventing-ingress
           - name: BROKER_INGRESS_SERVICE_ACCOUNT
             value: eventing-broker-ingress
           - name: BROKER_FILTER_IMAGE
-            value: image-registry.openshift-image-registry.svc:5000/knative-eventing/knative-eventing-filter:ci
+            value: image-registry.openshift-image-registry.svc:5000/knative-eventing/knative-eventing-filter
           - name: BROKER_FILTER_SERVICE_ACCOUNT
             value: eventing-broker-filter
         ports:
@@ -1775,7 +1775,7 @@ spec:
       serviceAccountName: eventing-source-controller
       containers:
       - name: controller
-        image: image-registry.openshift-image-registry.svc:5000/knative-eventing/knative-eventing-sources-controller:ci
+        image: image-registry.openshift-image-registry.svc:5000/knative-eventing/knative-eventing-sources-controller
         resources:
           requests:
             cpu: 100m
@@ -1798,9 +1798,9 @@ spec:
           - name: METRICS_DOMAIN
             value: knative.dev/sources
           - name: CRONJOB_RA_IMAGE
-            value: image-registry.openshift-image-registry.svc:5000/knative-eventing/knative-eventing-cronjob-receive-adapter:ci
+            value: image-registry.openshift-image-registry.svc:5000/knative-eventing/knative-eventing-cronjob-receive-adapter
           - name: APISERVER_RA_IMAGE
-            value: image-registry.openshift-image-registry.svc:5000/knative-eventing/knative-eventing-apiserver-receive-adapter:ci
+            value: image-registry.openshift-image-registry.svc:5000/knative-eventing/knative-eventing-apiserver-receive-adapter
       volumes:
         - name: config-logging
           configMap:
@@ -1829,7 +1829,7 @@ spec:
       containers:
       - name: eventing-webhook
         terminationMessagePolicy: FallbackToLogsOnError
-        image: image-registry.openshift-image-registry.svc:5000/knative-eventing/knative-eventing-webhook:ci
+        image: image-registry.openshift-image-registry.svc:5000/knative-eventing/knative-eventing-webhook
         volumeMounts:
         - name: config-logging
           mountPath: /etc/config-logging
@@ -1946,7 +1946,6 @@ data:
     zipkin-endpoint: "http://zipkin.istio-system.svc.cluster.local:9411/api/v2/spans"
     debug: "false"
     sample-rate: "0.1"
----
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -2254,7 +2253,7 @@ spec:
       serviceAccountName: imc-controller
       containers:
       - name: controller
-        image: image-registry.openshift-image-registry.svc:5000/knative-eventing/knative-eventing-imc-controller:ci
+        image: image-registry.openshift-image-registry.svc:5000/knative-eventing/knative-eventing-imc-controller
         env:
           - name: CONFIG_LOGGING_NAME
             value: config-logging
@@ -2294,7 +2293,7 @@ spec:
       serviceAccountName: imc-dispatcher
       containers:
       - name: dispatcher
-        image: image-registry.openshift-image-registry.svc:5000/knative-eventing/knative-eventing-imc-dispatcher:ci
+        image: image-registry.openshift-image-registry.svc:5000/knative-eventing/knative-eventing-imc-dispatcher
         env:
           - name: CONFIG_LOGGING_NAME
             value: config-logging

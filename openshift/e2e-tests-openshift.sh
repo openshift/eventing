@@ -205,7 +205,7 @@ function tag_core_images(){
   for nametag in $IMAGE_NAMES; do
     name=$(echo $nametag | cut -d: -f1)
     tag=$(echo $nametag | cut -d: -f2)
-    tag_built_image ${name} ${name} ${tag}
+    tag_built_image ${name} ${name} latest
   done
 }
 
