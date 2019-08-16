@@ -17,6 +17,7 @@ readonly TEST_ORIGIN_CONFORMANCE="${TEST_ORIGIN_CONFORMANCE:-"false"}"
 readonly SERVING_NAMESPACE=knative-serving
 readonly EVENTING_NAMESPACE=knative-eventing
 readonly TARGET_IMAGE_PREFIX="$INTERNAL_REGISTRY/$EVENTING_NAMESPACE/knative-eventing-"
+readonly MAISTRA_VERSION="0.12"
 
 # The OLM global namespace was moved to openshift-marketplace since v4.2
 # ref: https://jira.coreos.com/browse/OLM-1190
@@ -53,14 +54,107 @@ function install_strimzi(){
   sleep 5; while echo && kubectl get pods -n kafka | grep -v -E "(Running|Completed|STATUS)"; do sleep 5; done
 }
 
+function install_istio(){
+  header "Installing Istio"
+
+  # Install the Maistra Operator
+  oc new-project istio-operator
+  oc new-project istio-system
+  oc apply -n istio-operator -f https://raw.githubusercontent.com/Maistra/istio-operator/maistra-${MAISTRA_VERSION}/deploy/maistra-operator.yaml
+
+  # Wait until the Operator pod is up and running
+  wait_until_pods_running istio-operator || return 1
+
+  # Workaround for MAISTRA-670
+  oc delete validatingwebhookconfiguration istio-operator.servicemesh-resources.maistra.io
+
+  # Deploy Istio
+  cat <<EOF | oc apply -f -
+apiVersion: maistra.io/v1
+kind: ServiceMeshControlPlane
+metadata:
+  name: minimal-multitenant-cni-install
+  namespace: istio-system
+spec:
+  istio:
+    global:
+      multitenant: true
+      proxy:
+        autoInject: disabled
+      omitSidecarInjectorConfigMap: true
+      disablePolicyChecks: false
+    istio_cni:
+      enabled: true
+    gateways:
+      istio-ingressgateway:
+        autoscaleEnabled: false
+        type: LoadBalancer
+      istio-egressgateway:
+        enabled: false
+      cluster-local-gateway:
+        autoscaleEnabled: false
+        enabled: true
+        labels:
+          app: cluster-local-gateway
+          istio: cluster-local-gateway
+        ports:
+          - name: status-port
+            port: 15020
+          - name: http2
+            port: 80
+            targetPort: 80
+          - name: https
+            port: 443
+    mixer:
+      enabled: false
+      policy:
+        enabled: false
+      telemetry:
+        enabled: false
+    pilot:
+      # disable autoscaling for use in smaller environments
+      autoscaleEnabled: false
+      sidecar: false
+    kiali:
+      enabled: false
+    tracing:
+      enabled: false
+    prometheus:
+      enabled: false
+    grafana:
+      enabled: false
+    sidecarInjectorWebhook:
+      enabled: false
+---
+apiVersion: maistra.io/v1
+kind: ServiceMeshMemberRoll
+metadata:
+  name: default
+spec:
+  members:
+  - serving-tests
+  - serving-tests-alt
+  - knative-serving
+EOF
+
+  # Wait for the ingressgateway pod to appear.
+  timeout_non_zero 900 '[[ $(oc get pods -n istio-system | grep -c istio-ingressgateway) -eq 0 ]]' || return 1
+
+  wait_until_service_has_external_ip istio-system istio-ingressgateway || fail_test "Ingress has no external IP"
+  wait_until_hostname_resolves $(kubectl get svc -n istio-system istio-ingressgateway -o jsonpath="{.status.loadBalancer.ingress[0].hostname}")
+
+  wait_until_pods_running istio-system
+
+  header "Istio Installed successfully"
+}
+
 function install_knative_serving(){
   header "Installing Knative Serving"
 
   create_knative_namespace serving
 
   # Install CatalogSources in OLM namespace
-  # oc apply -n $OLM_NAMESPACE -f https://raw.githubusercontent.com/openshift/knative-serving/release-${SERVING_VERSION}/openshift/olm/knative-serving.catalogsource.yaml
-  oc apply -n $OLM_NAMESPACE -f https://raw.githubusercontent.com/openshift/knative-serving/4ed9500673b9ce69fcf71c340436277bb20e08ef/openshift/olm/knative-serving.catalogsource.yaml
+  oc apply -n $OLM_NAMESPACE -f https://raw.githubusercontent.com/openshift/knative-serving/release-${SERVING_VERSION}/openshift/olm/knative-serving.catalogsource.yaml
   timeout_non_zero 900 '[[ $(oc get pods -n $OLM_NAMESPACE | grep -c knative) -eq 0 ]]' || return 1
   wait_until_pods_running $OLM_NAMESPACE
 
@@ -363,6 +457,8 @@ create_test_namespace || exit 1
 failed=0
 
 (( !failed )) && install_strimzi || failed=1
+
+(( !failed )) && install_istio || failed=1
 
 (( !failed )) && install_knative_serving || failed=1
 
