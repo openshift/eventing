@@ -217,6 +217,11 @@ function readTestFiles() {
 
  sed -i "s/\([A-Z]\)/-\L\1/g" TEST_NAMES
  sed -i "s/^-//" TEST_NAMES
+
+ # add new test name structure to the list:
+ echo "test-default-broker-with-many-attribute-triggers" >> TEST_NAMES;
+ echo "test-default-broker-with-many-deprecated-triggers" >> TEST_NAMES;
+ echo "test-default-broker-with-many-attribute-and-extension-triggers" >> TEST_NAMES;
 }
 
 function create_test_namespace(){
