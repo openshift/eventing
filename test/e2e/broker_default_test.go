@@ -68,7 +68,7 @@ type eventReceiver struct {
 // It then binds many triggers with different filtering patterns to that default broker,
 // and sends different events to the broker's address. Finally, it verifies that only
 // the appropriate events are routed to the subscribers.
-func TestDefaultBrokerWithManyTriggers(t *testing.T) {
+func MyDefaultBrokerWithManyTriggers(t *testing.T) {
 	tests := []struct {
 		name            string
 		eventsToReceive []eventReceiver // These are the event context attributes and extension attributes that triggers will listen to,
