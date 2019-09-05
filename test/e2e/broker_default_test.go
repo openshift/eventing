@@ -76,22 +76,23 @@ func TestDefaultBrokerWithManyTriggers(t *testing.T) {
 		eventsToSend            []eventContext // These are the event context attributes and extension attributes that will be send.
 		deprecatedTriggerFilter bool           //TriggerFilter with DeprecatedSourceAndType or not
 	}{
+		// {
+		// 	name: "test default broker with many deprecated triggers",
+		// 	eventsToReceive: []eventReceiver{
+		// 		{eventContext{Type: any, Source: any}, newSelector()},
+		// 		{eventContext{Type: eventType1, Source: any}, newSelector()},
+		// 		{eventContext{Type: any, Source: eventSource1}, newSelector()},
+		// 		{eventContext{Type: eventType1, Source: eventSource1}, newSelector()},
+		// 	},
+		// 	eventsToSend: []eventContext{
+		// 		{Type: eventType1, Source: eventSource1},
+		// 		{Type: eventType1, Source: eventSource2},
+		// 		{Type: eventType2, Source: eventSource1},
+		// 		{Type: eventType2, Source: eventSource2},
+		// 	},
+		// 	deprecatedTriggerFilter: true,
+		// },
 		{
-			name: "test default broker with many deprecated triggers",
-			eventsToReceive: []eventReceiver{
-				{eventContext{Type: any, Source: any}, newSelector()},
-				{eventContext{Type: eventType1, Source: any}, newSelector()},
-				{eventContext{Type: any, Source: eventSource1}, newSelector()},
-				{eventContext{Type: eventType1, Source: eventSource1}, newSelector()},
-			},
-			eventsToSend: []eventContext{
-				{Type: eventType1, Source: eventSource1},
-				{Type: eventType1, Source: eventSource2},
-				{Type: eventType2, Source: eventSource1},
-				{Type: eventType2, Source: eventSource2},
-			},
-			deprecatedTriggerFilter: true,
-		}, {
 			name: "test default broker with many attribute triggers",
 			eventsToReceive: []eventReceiver{
 				{eventContext{Type: any, Source: any}, newSelector()},
