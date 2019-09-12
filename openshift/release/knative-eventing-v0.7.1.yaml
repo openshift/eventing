@@ -2110,6 +2110,20 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
+  name: eventing-controller
+  namespace: knative-eventing
+  labels:
+    app: eventing-controller 
+spec:
+  podSelector:
+    matchLabels:
+      app: eventing-controller
+  ingress:
+  - {}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
   name: eventing-webhook
   namespace: knative-eventing
   labels:
@@ -2118,5 +2132,19 @@ spec:
   podSelector:
     matchLabels:
       app: eventing-webhook
+  ingress:
+  - {}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: sources-controller
+  namespace: knative-eventing
+  labels:
+    app: sources-controller
+spec:
+  podSelector:
+    matchLabels:
+      app: sources-controller
   ingress:
   - {}
