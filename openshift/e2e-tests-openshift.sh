@@ -106,7 +106,7 @@ function install_knative_serving(){
   deploy_serverless_operator
 
   # Wait for the CRD to appear
-  timeout_non_zero  '[[ $(oc get crd | grep -c knativeservings) -eq 0 ]]' || return 1
+  timeout_non_zero 900 '[[ $(oc get crd | grep -c knativeservings) -eq 0 ]]' || return 1
 
   # Install Knative Serving
   cat <<-EOF | oc apply -f -
