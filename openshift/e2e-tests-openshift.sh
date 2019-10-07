@@ -5,7 +5,7 @@ source $(dirname $0)/release/resolve.sh
 
 set -x
 
-readonly SERVING_VERSION=v0.7.1
+readonly SERVING_VERSION=v0.8.1
 
 readonly K8S_CLUSTER_OVERRIDE=$(oc config current-context | awk -F'/' '{print $2}')
 readonly API_SERVER=$(oc config view --minify | grep server | awk -F'//' '{print $2}' | awk -F':' '{print $1}')
@@ -16,6 +16,7 @@ readonly INSECURE="${INSECURE:-"false"}"
 readonly TEST_ORIGIN_CONFORMANCE="${TEST_ORIGIN_CONFORMANCE:-"false"}"
 readonly SERVING_NAMESPACE=knative-serving
 readonly EVENTING_NAMESPACE=knative-eventing
+readonly SERVICEMESH_NAMESPACE=istio-system
 readonly TARGET_IMAGE_PREFIX="$INTERNAL_REGISTRY/$EVENTING_NAMESPACE/knative-eventing-"
 
 # The OLM global namespace was moved to openshift-marketplace since v4.2
@@ -53,31 +54,91 @@ function install_strimzi(){
   sleep 5; while echo && kubectl get pods -n kafka | grep -v -E "(Running|Completed|STATUS)"; do sleep 5; done
 }
 
+function install_servicemesh(){
+  header "Installing ServiceMesh"
+
+  # Install the ServiceMesh Operator
+  oc apply -f https://raw.githubusercontent.com/openshift/knative-serving/release-v0.8.1/openshift/servicemesh/operator-install.yaml
+
+  # Wait for the istio-operator pod to appear
+  timeout_non_zero 900 '[[ $(oc get pods -n openshift-operators | grep -c istio-operator) -eq 0 ]]' || return 1
+
+  # Wait until the Operator pod is up and running
+  wait_until_pods_running openshift-operators || return 1
+
+  # Deploy ServiceMesh
+  oc new-project $SERVICEMESH_NAMESPACE
+  oc apply -n $SERVICEMESH_NAMESPACE -f https://raw.githubusercontent.com/openshift/knative-serving/release-v0.8.1/openshift/servicemesh/controlplane-install.yaml
+  cat <<EOF >> ServiceMeshMemberRoll.yaml
+apiVersion: maistra.io/v1
+kind: ServiceMeshMemberRoll
+metadata:
+  name: default
+  namespace: ${SERVICEMESH_NAMESPACE}
+spec:
+  members:
+  - ${SERVING_NAMESPACE}
+  - ${EVENTING_NAMESPACE}
+EOF
+
+  # process array to create the NS and give SCC
+  testNamesArray=($(cat TEST_NAMES |tr "\n" " "))
+  for i in "${testNamesArray[@]}"
+  do
+  # append test NS members
+ cat <<-EOF >> ServiceMeshMemberRoll.yaml
+- $i
+EOF
+  done
+
+  oc apply -f ServiceMeshMemberRoll.yaml
+
+  # Wait for the ingressgateway pod to appear.
+  timeout_non_zero 900 '[[ $(oc get pods -n $SERVICEMESH_NAMESPACE | grep -c istio-ingressgateway) -eq 0 ]]' || return 1
+
+  wait_until_service_has_external_ip $SERVICEMESH_NAMESPACE istio-ingressgateway || fail_test "Ingress has no external IP"
+  wait_until_hostname_resolves "$(kubectl get svc -n $SERVICEMESH_NAMESPACE istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')"
+
+  wait_until_pods_running $SERVICEMESH_NAMESPACE
+
+  rm ServiceMeshMemberRoll.yaml
+  header "ServiceMesh installed successfully"
+}
+
 function install_knative_serving(){
   header "Installing Knative Serving"
 
-  create_knative_namespace serving
+  oc new-project $SERVING_NAMESPACE
 
-  # Install CatalogSources in OLM namespace
-  # oc apply -n $OLM_NAMESPACE -f https://raw.githubusercontent.com/openshift/knative-serving/release-${SERVING_VERSION}/openshift/olm/knative-serving.catalogsource.yaml
-  oc apply -n $OLM_NAMESPACE -f https://raw.githubusercontent.com/openshift/knative-serving/4ed9500673b9ce69fcf71c340436277bb20e08ef/openshift/olm/knative-serving.catalogsource.yaml
-  timeout_non_zero 900 '[[ $(oc get pods -n $OLM_NAMESPACE | grep -c knative) -eq 0 ]]' || return 1
-  wait_until_pods_running $OLM_NAMESPACE
+  # # Install CatalogSource in OLM namespace
+  # oc apply -n $OLM_NAMESPACE -f https://raw.githubusercontent.com/openshift/knative-serving/release-v0.8.1/openshift/olm/knative-serving.catalogsource.yaml
+  # timeout_non_zero 900 '[[ $(oc get pods -n $OLM_NAMESPACE | grep -c serverless) -eq 0 ]]' || return 1
+  # wait_until_pods_running $OLM_NAMESPACE
 
-  # Deploy Knative Operators Serving
-  deploy_knative_operator serving KnativeServing
+  # Deploy Serverless Operator
+  deploy_serverless_operator
+
+  # Wait for the CRD to appear
+  timeout_non_zero 900 '[[ $(oc get crd | grep -c knativeservings) -eq 0 ]]' || return 1
+
+  # Install Knative Serving
+  cat <<-EOF | oc apply -f -
+apiVersion: serving.knative.dev/v1alpha1
+kind: KnativeServing
+metadata:
+  name: knative-serving
+  namespace: ${SERVING_NAMESPACE}
+EOF
 
   # Wait for 6 pods to appear first
   timeout_non_zero 900 '[[ $(oc get pods -n $SERVING_NAMESPACE --no-headers | wc -l) -lt 6 ]]' || return 1
-  wait_until_pods_running knative-serving || return 1
-
-  # Wait for 2 pods to appear first
-  timeout_non_zero 900 '[[ $(oc get pods -n istio-system --no-headers | wc -l) -lt 2 ]]' || return 1
-  wait_until_service_has_external_ip istio-system istio-ingressgateway || fail_test "Ingress has no external IP"
-
-  wait_until_hostname_resolves $(kubectl get svc -n istio-system istio-ingressgateway -o jsonpath="{.status.loadBalancer.ingress[0].hostname}")
+  wait_until_pods_running $SERVING_NAMESPACE || return 1
 
   header "Knative Serving Installed successfully"
+}
+
+function deploy_serverless_operator(){
+  oc apply -f openshift/serverless/operator-install.yaml
 }
 
 function create_knative_namespace(){
@@ -127,7 +188,7 @@ function deploy_knative_operator(){
 
   # # Wait until the server knows about the Install CRD before creating
   # # an instance of it below
-  # timeout_non_zero 60 '[[ $(oc get crd knative${API_GROUP}s.${API_GROUP}.knative.dev -o jsonpath="{.status.acceptedNames.kind}" | grep -c $KIND) -eq 0 ]]' || return 1
+  timeout_non_zero 60 '[[ $(oc get crd knative${API_GROUP}s.${API_GROUP}.knative.dev -o jsonpath="{.status.acceptedNames.kind}" | grep -c $KIND) -eq 0 ]]' || return 1
   
   # cat <<-EOF | oc apply -f -
   # apiVersion: ${API_GROUP}.knative.dev/v1alpha1
@@ -144,13 +205,16 @@ function install_knative_eventing(){
   create_knative_namespace eventing
 
 
-  echo ">> Patching Knative Eventing CatalogSource to reference CI produced images"
-  CURRENT_GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-  RELEASE_YAML="https://raw.githubusercontent.com/openshift/knative-eventing/${CURRENT_GIT_BRANCH}/openshift/release/knative-eventing-ci.yaml"
-  sed "s|--filename=.*|--filename=${RELEASE_YAML}|"  openshift/olm/knative-eventing.catalogsource.yaml > knative-eventing.catalogsource-ci.yaml
+  # echo ">> Patching Knative Eventing CatalogSource to reference CI produced images"
+  # CURRENT_GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+  # RELEASE_YAML="https://raw.githubusercontent.com/openshift/knative-eventing/${CURRENT_GIT_BRANCH}/openshift/release/knative-eventing-ci.yaml"
+  # sed "s|--filename=.*|--filename=${RELEASE_YAML}|"  openshift/olm/knative-eventing.catalogsource.yaml > knative-eventing.catalogsource-ci.yaml
 
-  # Install CatalogSources in OLM namespace
-  oc apply -n $OLM_NAMESPACE -f knative-eventing.catalogsource-ci.yaml
+  # # Install CatalogSources in OLM namespace
+  # oc apply -n $OLM_NAMESPACE -f knative-eventing.catalogsource-ci.yaml
+
+
+  oc apply -n $OLM_NAMESPACE -f openshift/olm/knative-eventing.catalogsource.yaml
   timeout_non_zero 900 '[[ $(oc get pods -n $OLM_NAMESPACE | grep -c knative-eventing) -eq 0 ]]' || return 1
   wait_until_pods_running $OLM_NAMESPACE
 
@@ -205,8 +269,7 @@ function tag_core_images(){
   IMAGE_NAMES=$(cat $resolved_file_name | grep -i "image:\|value:" | grep "$INTERNAL_REGISTRY" | awk '{print $2}' | awk -F '/' '{print $3}')
   for nametag in $IMAGE_NAMES; do
     name=$(echo $nametag | cut -d: -f1)
-    tag=$(echo $nametag | cut -d: -f2)
-    tag_built_image ${name} ${name} ${tag}
+    tag_built_image ${name} ${name}
   done
 }
 
@@ -289,7 +352,7 @@ function tag_test_images() {
 
   for image_dir in ${image_dirs}; do
     name=$(basename ${image_dir})
-    tag_built_image knative-eventing-test-${name} ${name} latest
+    tag_built_image knative-eventing-test-${name} ${name}
 
   done
 }
@@ -297,8 +360,7 @@ function tag_test_images() {
 function tag_built_image() {
   local remote_name=$1
   local local_name=$2
-  local build_tag=$3
-  oc tag --insecure=${INSECURE} -n ${EVENTING_NAMESPACE} ${OPENSHIFT_REGISTRY}/${OPENSHIFT_BUILD_NAMESPACE}/stable:${remote_name} ${local_name}:${build_tag}
+  oc tag --insecure=${INSECURE} -n ${EVENTING_NAMESPACE} ${OPENSHIFT_REGISTRY}/${OPENSHIFT_BUILD_NAMESPACE}/stable:${remote_name} ${local_name}:latest
 }
 
 function run_origin_e2e() {
@@ -363,6 +425,8 @@ create_test_namespace || exit 1
 failed=0
 
 (( !failed )) && install_strimzi || failed=1
+
+(( !failed )) && install_servicemesh || failed=1
 
 (( !failed )) && install_knative_serving || failed=1
 
