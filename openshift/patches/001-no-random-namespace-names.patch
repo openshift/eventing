@@ -1,0 +1,13 @@
+diff --git a/test/common/test_runner.go b/test/common/test_runner.go
+index 4408365e..0b721b85 100644
+--- a/test/common/test_runner.go
++++ b/test/common/test_runner.go
+@@ -81,7 +81,7 @@ func contains(features []Feature, feature Feature) bool {
+ func Setup(t *testing.T, runInParallel bool) *Client {
+ 	// Create a new namespace to run this test case.
+ 	baseFuncName := helpers.GetBaseFuncName(t.Name())
+-	namespace := makeK8sNamespace(baseFuncName)
++	namespace := helpers.MakeK8sNamePrefix(baseFuncName)
+ 	t.Logf("namespace is : %q", namespace)
+ 	client, err := NewClient(
+ 		pkgTest.Flags.Kubeconfig,
