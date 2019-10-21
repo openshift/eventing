@@ -62,7 +62,9 @@ function install_servicemesh(){
   # Deploy ServiceMesh
   oc new-project $SERVICEMESH_NAMESPACE
   oc apply -n $SERVICEMESH_NAMESPACE -f https://raw.githubusercontent.com/openshift/knative-serving/release-${SERVING_VERSION}/openshift/servicemesh/controlplane-install.yaml
-  cat <<EOF >> ServiceMeshMemberRoll.yaml
+
+  testNames=$(cat TEST_NAMES | tr "\n" " ")
+  cat <<EOF | oc apply -f -
 apiVersion: maistra.io/v1
 kind: ServiceMeshMemberRoll
 metadata:
@@ -72,19 +74,8 @@ spec:
   members:
   - ${SERVING_NAMESPACE}
   - ${EVENTING_NAMESPACE}
+$(for i in $testNames; do echo "  - $i"; done)
 EOF
-
-  # process array to create the NS and give SCC
-  testNamesArray=($(cat TEST_NAMES |tr "\n" " "))
-  for i in "${testNamesArray[@]}"
-  do
-  # append test NS members
- cat <<-EOF >> ServiceMeshMemberRoll.yaml
-- $i
-EOF
-  done
-
-  oc apply -f ServiceMeshMemberRoll.yaml
 
   # Wait for the ingressgateway pod to appear.
   timeout_non_zero 900 '[[ $(oc get pods -n $SERVICEMESH_NAMESPACE | grep -c istio-ingressgateway) -eq 0 ]]' || return 1
@@ -94,7 +85,6 @@ EOF
 
   wait_until_pods_running $SERVICEMESH_NAMESPACE
 
-  rm ServiceMeshMemberRoll.yaml
   header "ServiceMesh installed successfully"
 }
 
