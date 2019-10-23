@@ -1,0 +1,12 @@
+diff --git a/openshift/release/knative-eventing-ci.yaml b/openshift/release/knative-eventing-ci.yaml
+index 9ce5843c..fb12acce 100644
+--- a/openshift/release/knative-eventing-ci.yaml
++++ b/openshift/release/knative-eventing-ci.yaml
+@@ -309,6 +309,7 @@ rules:
+     resources:
+       - "sequences/finalizers"
+       - "parallels/finalizers"
++      - "channels/finalizers"
+     verbs:
+       - "update"
+   - apiGroups:
