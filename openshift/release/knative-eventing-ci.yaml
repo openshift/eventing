@@ -68,10 +68,12 @@ rules:
   resources:
   - channels
   - channels/status
+  - channels/finalizers
   verbs:
   - get
   - list
   - watch
+  - update
 ---
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
