@@ -5,7 +5,7 @@ source $(dirname $0)/release/resolve.sh
 
 set -x
 
-readonly SERVING_VERSION=v0.8.1
+readonly SERVING_VERSION=v0.9.0
 
 readonly K8S_CLUSTER_OVERRIDE=$(oc config current-context | awk -F'/' '{print $2}')
 readonly API_SERVER=$(oc config view --minify | grep server | awk -F'//' '{print $2}' | awk -F':' '{print $1}')
@@ -80,7 +80,7 @@ EOF
   do
   # append test NS members
  cat <<-EOF >> ServiceMeshMemberRoll.yaml
-- $i
+  - $i
 EOF
   done
 
