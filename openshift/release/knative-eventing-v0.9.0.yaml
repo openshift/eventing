@@ -2296,3 +2296,57 @@ spec:
       app: eventing-webhook
   ingress:
   - {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: in-memory-channel-controller
+  namespace: knative-eventing
+  labels:
+    eventing.knative.dev/release: devel
+spec:
+  replicas: 0
+  selector:
+    matchLabels: &labels
+      clusterChannelProvisioner: in-memory-channel
+      role: controller
+  template:
+    metadata:
+      labels: *labels
+    spec:
+      serviceAccountName: in-memory-channel-controller
+      containers:
+        - name: controller
+          image: quay.io/openshift-knative/knative-eventing-in-memory-channel-controller:v0.8.0
+          env:
+          - name: SYSTEM_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: in-memory-channel-dispatcher
+  namespace: knative-eventing
+  labels:
+    eventing.knative.dev/release: devel
+spec:
+  replicas: 0
+  selector:
+    matchLabels: &labels
+      clusterChannelProvisioner: in-memory-channel
+      role: dispatcher
+  template:
+    metadata:
+      labels: *labels
+    spec:
+      serviceAccountName: in-memory-channel-dispatcher
+      containers:
+        - name: dispatcher
+          image: quay.io/openshift-knative/knative-eventing-in-memory-channel-dispatcher:v0.8.0
+          env:
+          - name: SYSTEM_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
