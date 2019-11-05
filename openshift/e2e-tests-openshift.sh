@@ -103,6 +103,11 @@ function install_knative_serving(){
 
   oc new-project $SERVING_NAMESPACE
 
+  # Install CatalogSource in OLM namespace
+  oc apply -n $OLM_NAMESPACE -f https://raw.githubusercontent.com/openshift/knative-serving/release-${SERVING_VERSION}/openshift/olm/knative-serving.catalogsource.yaml
+  timeout 900 '[[ $(oc get pods -n $OLM_NAMESPACE | grep -c serverless) -eq 0 ]]' || return 1
+  wait_until_pods_running $OLM_NAMESPACE
+
   # Deploy Serverless Operator
   deploy_serverless_operator
 
@@ -126,7 +131,30 @@ EOF
 }
 
 function deploy_serverless_operator(){
-  oc apply -f openshift/serverless/operator-install.yaml
+  local NAME="serverless-operator"
+
+  if oc get crd operatorgroups.operators.coreos.com >/dev/null 2>&1; then
+    cat <<-EOF | oc apply -f -
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: ${NAME}
+  namespace: ${SERVING_NAMESPACE}
+EOF
+  fi
+
+  cat <<-EOF | oc apply -f -
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: ${NAME}-subscription
+  namespace: ${SERVING_NAMESPACE}
+spec:
+  source: ${NAME}
+  sourceNamespace: $OLM_NAMESPACE
+  name: ${NAME}
+  channel: techpreview
+EOF
 }
 
 function create_knative_namespace(){
