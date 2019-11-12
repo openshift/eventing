@@ -5,7 +5,7 @@ source $(dirname $0)/release/resolve.sh
 
 set -x
 
-readonly SERVING_VERSION=v0.8.1
+readonly SERVING_VERSION=v0.9.0
 
 readonly K8S_CLUSTER_OVERRIDE=$(oc config current-context | awk -F'/' '{print $2}')
 readonly API_SERVER=$(oc config view --minify | grep server | awk -F'//' '{print $2}' | awk -F':' '{print $1}')
@@ -16,15 +16,10 @@ readonly INSECURE="${INSECURE:-"false"}"
 readonly TEST_ORIGIN_CONFORMANCE="${TEST_ORIGIN_CONFORMANCE:-"false"}"
 readonly SERVING_NAMESPACE=knative-serving
 readonly EVENTING_NAMESPACE=knative-eventing
-readonly SERVICEMESH_NAMESPACE=istio-system
+readonly SERVICEMESH_NAMESPACE=knative-serving-ingress
+export GATEWAY_NAMESPACE_OVERRIDE="$SERVICEMESH_NAMESPACE"
 readonly TARGET_IMAGE_PREFIX="$INTERNAL_REGISTRY/$EVENTING_NAMESPACE/knative-eventing-"
-# The OLM global namespace was moved to openshift-marketplace since v4.2
-# ref: https://jira.coreos.com/browse/OLM-1190
-if [ ${HOSTNAME} = "e2e-aws-ocp-41" ]; then
-  readonly OLM_NAMESPACE="openshift-operator-lifecycle-manager"
-else
-  readonly OLM_NAMESPACE="openshift-marketplace"
-fi
+readonly OLM_NAMESPACE="openshift-marketplace"
 
 env
 
@@ -53,61 +48,27 @@ function install_strimzi(){
   sleep 5; while echo && kubectl get pods -n kafka | grep -v -E "(Running|Completed|STATUS)"; do sleep 5; done
 }
 
-function install_servicemesh(){
-  header "Installing ServiceMesh"
-
-  # Install the ServiceMesh Operator
-  oc apply -f https://raw.githubusercontent.com/openshift/knative-serving/release-${SERVING_VERSION}/openshift/servicemesh/operator-install.yaml
-
-  # Wait for the istio-operator pod to appear
-  timeout_non_zero 900 '[[ $(oc get pods -n openshift-operators | grep -c istio-operator) -eq 0 ]]' || return 1
-
-  # Wait until the Operator pod is up and running
-  wait_until_pods_running openshift-operators || return 1
-
-  # Deploy ServiceMesh
-  oc new-project $SERVICEMESH_NAMESPACE
-  oc apply -n $SERVICEMESH_NAMESPACE -f https://raw.githubusercontent.com/openshift/knative-serving/release-${SERVING_VERSION}/openshift/servicemesh/controlplane-install.yaml
-  cat <<EOF >> ServiceMeshMemberRoll.yaml
-apiVersion: maistra.io/v1
-kind: ServiceMeshMemberRoll
-metadata:
-  name: default
-  namespace: ${SERVICEMESH_NAMESPACE}
-spec:
-  members:
-  - ${SERVING_NAMESPACE}
-  - ${EVENTING_NAMESPACE}
-EOF
-
-  # process array to create the NS and give SCC
-  testNamesArray=($(cat TEST_NAMES |tr "\n" " "))
-  for i in "${testNamesArray[@]}"
-  do
-  # append test NS members
- cat <<-EOF >> ServiceMeshMemberRoll.yaml
-- $i
-EOF
-  done
-
-  oc apply -f ServiceMeshMemberRoll.yaml
-
-  # Wait for the ingressgateway pod to appear.
-  timeout_non_zero 900 '[[ $(oc get pods -n $SERVICEMESH_NAMESPACE | grep -c istio-ingressgateway) -eq 0 ]]' || return 1
-
-  wait_until_service_has_external_ip $SERVICEMESH_NAMESPACE istio-ingressgateway || fail_test "Ingress has no external IP"
-  wait_until_hostname_resolves "$(kubectl get svc -n $SERVICEMESH_NAMESPACE istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')"
-
-  wait_until_pods_running $SERVICEMESH_NAMESPACE
-
-  rm ServiceMeshMemberRoll.yaml
-  header "ServiceMesh installed successfully"
-}
-
 function install_knative_serving(){
+  # OLM doesn't support dependency resolution on 4.1 yet. Install the operator manually.
+  if [[ ${HOSTNAME} = e2e-aws-ocp-41* ]]; then
+    # Install the ServiceMesh Operator
+    oc apply -f https://raw.githubusercontent.com/openshift/knative-serving/release-${SERVING_VERSION}/openshift/servicemesh/operator-install.yaml
+
+    # Wait for the istio-operator pod to appear
+    timeout 900 '[[ $(oc get pods -n openshift-operators | grep -c istio-operator) -eq 0 ]]' || return 1
+
+    # Wait until the Operator pod is up and running
+    wait_until_pods_running openshift-operators || return 1
+  fi
+
   header "Installing Knative Serving"
 
   oc new-project $SERVING_NAMESPACE
+
+  # Install CatalogSource in OLM namespace
+  oc apply -n $OLM_NAMESPACE -f openshift/olm/knative-serving.catalogsource.yaml
+  timeout_non_zero 900 '[[ $(oc get pods -n $OLM_NAMESPACE | grep -c serverless) -eq 0 ]]' || return 1
+  wait_until_pods_running $OLM_NAMESPACE
 
   # Deploy Serverless Operator
   deploy_serverless_operator
@@ -124,15 +85,31 @@ metadata:
   namespace: ${SERVING_NAMESPACE}
 EOF
 
-  # Wait for 6 pods to appear first
-  timeout_non_zero 900 '[[ $(oc get pods -n $SERVING_NAMESPACE --no-headers | wc -l) -lt 6 ]]' || return 1
+  # Wait for 4 pods to appear first
+  timeout_non_zero 900 '[[ $(oc get pods -n $SERVING_NAMESPACE --no-headers | wc -l) -lt 4 ]]' || return 1
   wait_until_pods_running $SERVING_NAMESPACE || return 1
+
+  wait_until_service_has_external_ip $SERVICEMESH_NAMESPACE istio-ingressgateway || fail_test "Ingress has no external IP"
+  wait_until_hostname_resolves "$(kubectl get svc -n $SERVICEMESH_NAMESPACE istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')"
 
   header "Knative Serving Installed successfully"
 }
 
 function deploy_serverless_operator(){
-  oc apply -f openshift/serverless/operator-install.yaml
+  local NAME="serverless-operator"
+
+  cat <<-EOF | oc apply -f -
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: ${NAME}-subscription
+  namespace: openshift-operators
+spec:
+  source: ${NAME}
+  sourceNamespace: $OLM_NAMESPACE
+  name: ${NAME}
+  channel: techpreview
+EOF
 }
 
 function create_knative_namespace(){
@@ -190,15 +167,12 @@ function install_knative_eventing(){
 
   create_knative_namespace eventing
 
-  echo ">> Patching Knative Eventing CatalogSource to reference CI produced images"
-  CURRENT_GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-  RELEASE_YAML="https://raw.githubusercontent.com/openshift/knative-eventing/${CURRENT_GIT_BRANCH}/openshift/release/knative-eventing-ci.yaml"
-  sed "s|--filename=.*|--filename=${RELEASE_YAML}|"  openshift/olm/knative-eventing.catalogsource.yaml > knative-eventing.catalogsource-ci.yaml
-
-  oc apply -n $OLM_NAMESPACE -f knative-eventing.catalogsource-ci.yaml
+  oc apply -n $OLM_NAMESPACE -f openshift/olm/knative-eventing.catalogsource.yaml
   timeout_non_zero 900 '[[ $(oc get pods -n $OLM_NAMESPACE | grep -c knative-eventing) -eq 0 ]]' || return 1
   wait_until_pods_running $OLM_NAMESPACE
 
+  oc get pod -n $OLM_NAMESPACE -o yaml
+ 
   # Deploy Knative Operators Eventing
   deploy_knative_operator eventing KnativeEventing
 
@@ -227,31 +201,18 @@ function create_test_resources() {
   # process array to create the NS and give SCC
   for i in "${testNamesArray[@]}"
   do
-    prepare_namespaces $i
+    oc create serviceaccount eventing-broker-ingress -n $i
+    oc create serviceaccount eventing-broker-filter -n $i
+    oc adm policy add-scc-to-user anyuid -z default -n $i
+    oc adm policy add-scc-to-user privileged -z default -n $i
+    oc adm policy add-scc-to-user anyuid -z eventing-broker-filter -n $i
+    oc adm policy add-scc-to-user privileged -z eventing-broker-filter -n $i
+    oc adm policy add-cluster-role-to-user cluster-admin -z eventing-broker-filter -n $i
+    oc adm policy add-scc-to-user anyuid -z eventing-broker-ingress -n $i
+    oc adm policy add-scc-to-user privileged -z eventing-broker-ingress -n $i
+    oc adm policy add-cluster-role-to-user cluster-admin -z eventing-broker-ingress -n $i
   done
 
-  prepare_test_broker_namespaces "test-broker-channel-flow-in-memory-channel"
-}
-
-function prepare_namespaces() {
-  local ns=$1
-
-  oc create serviceaccount eventing-broker-ingress -n $ns
-  oc create serviceaccount eventing-broker-filter -n $ns
-  prepare_test_broker_namespaces $ns
-}
-
-function prepare_test_broker_namespaces() {
-  local ns=$1
-
-  oc adm policy add-scc-to-user anyuid -z default -n $ns
-  oc adm policy add-scc-to-user privileged -z default -n $ns
-  oc adm policy add-scc-to-user anyuid -z eventing-broker-filter -n $ns
-  oc adm policy add-scc-to-user privileged -z eventing-broker-filter -n $ns
-  oc adm policy add-cluster-role-to-user cluster-admin -z eventing-broker-filter -n $ns
-  oc adm policy add-scc-to-user anyuid -z eventing-broker-ingress -n $ns
-  oc adm policy add-scc-to-user privileged -z eventing-broker-ingress -n $ns
-  oc adm policy add-cluster-role-to-user cluster-admin -z eventing-broker-ingress -n $ns
 }
 
 function tag_core_images(){
@@ -282,7 +243,6 @@ function readTestFiles() {
 
  echo "test-channel-namespace-defaulter-in-memory-channel" >> TEST_NAMES;
  echo "test-channel-cluster-defaulter-in-memory-channel" >> TEST_NAMES;
-
 }
 
 function create_test_namespace(){
@@ -394,9 +354,9 @@ function scale_up_workers(){
 
   # Get the name of the first machineset that has at least 1 replica
   local machineset=$(oc get machineset -n ${cluster_api_ns} -o custom-columns="name:{.metadata.name},replicas:{.spec.replicas}" | grep " 1" | head -n 1 | awk '{print $1}')
-  # Bump the number of replicas to 8 (+ 1 + 1 == 10 workers)
-  oc patch machineset -n ${cluster_api_ns} ${machineset} -p '{"spec":{"replicas":8}}' --type=merge
-  wait_until_machineset_scales_up ${cluster_api_ns} ${machineset} 8
+  # Bump the number of replicas to 6 (+ 1 + 1 == 8 workers)
+  oc patch machineset -n ${cluster_api_ns} ${machineset} -p '{"spec":{"replicas":6}}' --type=merge
+  wait_until_machineset_scales_up ${cluster_api_ns} ${machineset} 6
 }
 
 # Waits until the machineset in the given namespaces scales up to the
@@ -419,6 +379,14 @@ function wait_until_machineset_scales_up() {
   return 1
 }
 
+function dump_openshift_olm_state(){
+  echo ">>> subscriptions.operators.coreos.com:"
+  oc get subscriptions.operators.coreos.com -o yaml --all-namespaces   # This is for status checking.
+
+  echo ">>> catalog operator log:"
+  oc logs -n openshift-operator-lifecycle-manager deployment/catalog-operator
+}
+
 scale_up_workers || exit 1
 
 readTestFiles || exit 1
@@ -429,13 +397,11 @@ failed=0
 
 (( !failed )) && install_strimzi || failed=1
 
-(( !failed )) && install_servicemesh || failed=1
-
 (( !failed )) && install_knative_serving || failed=1
 
 (( !failed )) && install_knative_eventing || failed=1
 
-(( !failed )) && create_test_resources
+(( !failed )) && create_test_resources || failed=1
 
 if [[ $TEST_ORIGIN_CONFORMANCE == true ]]; then
   (( !failed )) && run_origin_e2e || failed=1
@@ -444,6 +410,8 @@ fi
 (( !failed )) && run_e2e_tests || failed=1
 
 (( failed )) && dump_cluster_state
+
+(( failed )) && dump_openshift_olm_state
 
 teardown
 
