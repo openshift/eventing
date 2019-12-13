@@ -146,12 +146,6 @@ data:
                 - '*'
                 verbs:
                 - '*'
-              - apiGroups:
-                - maistra.io
-                resources:
-                - servicemeshmemberrolls
-                verbs:
-                - '*'
               serviceAccountName: knative-eventing-operator
             deployments:
             - name: knative-eventing-operator
@@ -179,7 +173,7 @@ data:
                         value: knative-eventing-operator
                       image: quay.io/openshift-knative/knative-eventing-operator:v0.10.0
                       args:
-                        - --filename=https://raw.githubusercontent.com/matzew/eventing/update_OLM_0.10.x/openshift/release/knative-eventing-v0.10.0.yaml
+                        - --filename=https://raw.githubusercontent.com/openshift/knative-eventing/release-v0.10.0/openshift/release/knative-eventing-v0.10.0.yaml,https://raw.githubusercontent.com/openshift-knative/knative-eventing-operator/master/deploy/resources/networkpolicies.yaml
                       imagePullPolicy: Always
                       name: knative-eventing-operator
                       resources: {}
