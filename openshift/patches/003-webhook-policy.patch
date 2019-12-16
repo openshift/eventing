@@ -1,0 +1,22 @@
+diff --git a/openshift/release/knative-eventing-ci.yaml b/openshift/release/knative-eventing-ci.yaml
+index 61d90e45..f86fdd6e 100644
+--- a/openshift/release/knative-eventing-ci.yaml
++++ b/openshift/release/knative-eventing-ci.yaml
+@@ -2903,3 +2903,17 @@ spec:
+         - name: config-logging
+           configMap:
+             name: config-logging
++---
++apiVersion: networking.k8s.io/v1
++kind: NetworkPolicy
++metadata:
++  name: eventing-webhook
++  namespace: knative-eventing
++  labels:
++    app: eventing-webhook
++spec:
++  podSelector:
++    matchLabels:
++      app: eventing-webhook
++  ingress:
++  - {}
