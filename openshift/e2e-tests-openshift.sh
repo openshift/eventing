@@ -155,12 +155,13 @@ function install_knative_eventing(){
 
   create_knative_namespace eventing
 
-  echo ">> Patching Knative Eventing CatalogSource to reference CI produced images"
-  CURRENT_GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-  RELEASE_YAML="https://raw.githubusercontent.com/openshift/knative-eventing/${CURRENT_GIT_BRANCH}/openshift/release/knative-eventing-ci.yaml"
-  sed "s|--filename=.*|--filename=${RELEASE_YAML}|"  openshift/olm/knative-eventing.catalogsource.yaml > knative-eventing.catalogsource-ci.yaml
+  # echo ">> Patching Knative Eventing CatalogSource to reference CI produced images"
+  # CURRENT_GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+  # RELEASE_YAML="https://raw.githubusercontent.com/matzew/eventing/script_fixes/openshift/release/knative-eventing-ci.yaml"
+  # sed "s|--filename=.*|--filename=${RELEASE_YAML}|"  openshift/olm/knative-eventing.catalogsource.yaml > knative-eventing.catalogsource-ci.yaml
 
-  oc apply -n $OLM_NAMESPACE -f knative-eventing.catalogsource-ci.yaml
+  # oc apply -n $OLM_NAMESPACE -f knative-eventing.catalogsource-ci.yaml
+  oc apply -n $OLM_NAMESPACE -f openshift/olm/knative-eventing.catalogsource.yaml
   timeout_non_zero 900 '[[ $(oc get pods -n $OLM_NAMESPACE | grep -c knative-eventing) -eq 0 ]]' || return 1
   wait_until_pods_running $OLM_NAMESPACE
 
@@ -172,8 +173,8 @@ function install_knative_eventing(){
   # Create imagestream for images generated in CI namespace
   tag_core_images openshift/release/knative-eventing-ci.yaml
 
-  # Wait for 6 pods to appear first
-  timeout_non_zero 900 '[[ $(oc get pods -n $EVENTING_NAMESPACE --no-headers | wc -l) -lt 6 ]]' || return 1
+  # Wait for 5 pods to appear first
+  timeout_non_zero 900 '[[ $(oc get pods -n $EVENTING_NAMESPACE --no-headers | wc -l) -lt 5 ]]' || return 1
   wait_until_pods_running $EVENTING_NAMESPACE || return 1
 
   # Assert that there are no images used that are not CI images (which should all be using the $INTERNAL_REGISTRY)

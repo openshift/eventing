@@ -340,6 +340,14 @@ rules:
     verbs:
       - "update"
   - apiGroups:
+      - "flows.knative.dev"
+    resources:
+      - "sequences/finalizers"
+      - "parallels/finalizers"
+      - "channels/finalizers"
+    verbs:
+      - "update"
+  - apiGroups:
       - "apiextensions.k8s.io"
     resources:
       - "customresourcedefinitions"
@@ -2836,7 +2844,7 @@ spec:
       serviceAccountName: imc-controller
       containers:
       - name: controller
-        image: quay.io/openshift-knative/knative-eventing-imc-controller:v0.11.0
+        image: quay.io/openshift-knative/knative-eventing-channel-controller:v0.11.0
         env:
           - name: CONFIG_LOGGING_NAME
             value: config-logging
@@ -2879,7 +2887,7 @@ spec:
       serviceAccountName: imc-dispatcher
       containers:
       - name: dispatcher
-        image: quay.io/openshift-knative/knative-eventing-imc-dispatcher:v0.11.0
+        image: quay.io/openshift-knative/knative-eventing-channel-dispatcher:v0.11.0
         env:
           - name: CONFIG_LOGGING_NAME
             value: config-logging
