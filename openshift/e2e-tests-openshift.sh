@@ -157,7 +157,7 @@ function install_knative_eventing(){
 
   echo ">> Patching Knative Eventing CatalogSource to reference CI produced images"
   CURRENT_GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-  RELEASE_YAML="https://raw.githubusercontent.com/openshift/knative-eventing/${CURRENT_GIT_BRANCH}/openshift/release/knative-eventing-ci.yaml"
+  RELEASE_YAML="https://raw.githubusercontent.com/matzew/eventing/script_fixes/openshift/release/knative-eventing-ci.yaml"
   sed "s|--filename=.*|--filename=${RELEASE_YAML}|"  openshift/olm/knative-eventing.catalogsource.yaml > knative-eventing.catalogsource-ci.yaml
 
   oc apply -n $OLM_NAMESPACE -f knative-eventing.catalogsource-ci.yaml
