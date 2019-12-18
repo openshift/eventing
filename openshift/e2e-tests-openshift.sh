@@ -173,8 +173,8 @@ function install_knative_eventing(){
   # Create imagestream for images generated in CI namespace
   tag_core_images openshift/release/knative-eventing-ci.yaml
 
-  # Wait for 6 pods to appear first
-  timeout_non_zero 900 '[[ $(oc get pods -n $EVENTING_NAMESPACE --no-headers | wc -l) -lt 6 ]]' || return 1
+  # Wait for 5 pods to appear first
+  timeout_non_zero 900 '[[ $(oc get pods -n $EVENTING_NAMESPACE --no-headers | wc -l) -lt 5 ]]' || return 1
   wait_until_pods_running $EVENTING_NAMESPACE || return 1
 
   # Assert that there are no images used that are not CI images (which should all be using the $INTERNAL_REGISTRY)
