@@ -27,7 +27,7 @@ $CURDIR/generate-ci-config.sh knative-v$VERSION 4.3 > ${CONFIG}__4.3.yaml
 # Append missing lines to the mirror file.
 [ -n "$(tail -c1 $MIRROR)" ] && echo >> $MIRROR # Make sure there's a newline
 for IMAGE in $*; do
-    NAME=knative-eventing-sources-$(basename $IMAGE | sed 's/_/-/')
+    NAME=knative-eventing-$(basename $IMAGE | sed 's/_/-/' | sed 's/_/-/')
     echo "Adding $NAME to mirror file"
     LINE="registry.svc.ci.openshift.org/openshift/knative-v$VERSION:$NAME quay.io/openshift-knative/$NAME:v$VERSION"
     # Add $LINE if not already present
