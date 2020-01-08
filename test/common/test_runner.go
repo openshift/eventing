@@ -85,7 +85,7 @@ func contains(features []Feature, feature Feature) bool {
 func Setup(t *testing.T, runInParallel bool) *Client {
 	// Create a new namespace to run this test case.
 	baseFuncName := helpers.GetBaseFuncName(t.Name())
-	namespace := helpers.MakeK8sNamePrefix(baseFuncName)
+	namespace := makeK8sNamespace(baseFuncName)
 	t.Logf("namespace is : %q", namespace)
 	client, err := NewClient(
 		pkgTest.Flags.Kubeconfig,
