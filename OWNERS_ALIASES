@@ -1,23 +1,33 @@
 aliases:
-  # These aliases are for OWNERS of the various Channel implementations. These
-  # Are in addition to the repo level OWNERS.
-
-  performance-approvers:
-  - adrcunha
-  - chaodaiG
-  - slinkydeveloper
-  performance-reviewers:
-  - adrcunha
-  - chaodaiG
-  - slinkydeveloper
-
-  productivity-approvers:
-  - adrcunha
-  - chaodaiG
-  - chizhg
-  productivity-reviewers:
-  - adrcunha
-  - chaodaiG
-  - chizhg
-  - steuhs
-  - yt3liu
+  eventing-approvers:
+  - alanfx
+  - mgencur
+  - mvinkler
+  - bbrowning
+  - jcrossley3
+  - bobmcwhirter
+  - markusthoemmes
+  - vdemeester
+  - evanchooly
+  - arilivigni
+  - matzew
+  - lberk
+  - alanconway
+  - syedriko
+  - aliok
+  eventing-reviewers:
+  - alanfx
+  - mgencur
+  - mvinkler
+  - bbrowning
+  - jcrossley3
+  - bobmcwhirter
+  - markusthoemmes
+  - vdemeester
+  - evanchooly
+  - arilivigni
+  - matzew
+  - lberk
+  - syedriko
+  - alanconway
+  - aliok
