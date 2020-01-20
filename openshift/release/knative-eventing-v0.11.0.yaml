@@ -2427,6 +2427,7 @@ webhooks:
       namespace: knative-eventing
   failurePolicy: Fail
   name: sinkbindings.webhook.sources.knative.dev
+  sideEffects: None
 ---
 apiVersion: v1
 kind: Secret
