@@ -12,8 +12,6 @@ aliases:
   - arilivigni
   - matzew
   - lberk
-  - alanconway
-  - syedriko
   - aliok
   eventing-reviewers:
   - alanfx
@@ -28,6 +26,4 @@ aliases:
   - arilivigni
   - matzew
   - lberk
-  - syedriko
-  - alanconway
   - aliok
