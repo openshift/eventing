@@ -40,6 +40,7 @@ type branchConfig struct {
 }
 
 func TestFlowsParallel(t *testing.T) {
+	t.Skip("skipping")
 	const (
 		senderPodName = "e2e-parallel"
 	)
