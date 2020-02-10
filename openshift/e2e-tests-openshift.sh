@@ -255,7 +255,7 @@ function create_test_namespace(){
 function run_e2e_tests(){
   header "Running tests"
   report_go_test \
-    -v -tags=e2e -count=1 -timeout=35m -parallel=1 \
+    -v -tags=e2e -count=1 -timeout=70m -parallel=1 \
     ./test/e2e \
     --kubeconfig "$KUBECONFIG" \
     --dockerrepo "${INTERNAL_REGISTRY}/${EVENTING_NAMESPACE}" \
