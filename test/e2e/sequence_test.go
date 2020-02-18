@@ -35,6 +35,7 @@ import (
 )
 
 func TestFlowsSequence(t *testing.T) {
+	t.Skip("skipping")
 	const (
 		sequenceName  = "e2e-sequence"
 		senderPodName = "e2e-sequence-sender-pod"
