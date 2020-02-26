@@ -68,10 +68,12 @@ rules:
   resources:
   - channels
   - channels/status
+  - channels/finalizers
   verbs:
   - get
   - list
   - watch
+  - update
 ---
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
@@ -3002,3 +3004,17 @@ spec:
           limits:
             cpu: 2200m
             memory: 2048Mi
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: eventing-webhook
+  namespace: knative-eventing
+  labels:
+    app: eventing-webhook
+spec:
+  podSelector:
+    matchLabels:
+      app: eventing-webhook
+  ingress:
+  - {}
