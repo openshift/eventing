@@ -1,0 +1,13 @@
+diff --git a/config/core/deployments/webhook.yaml b/config/core/deployments/webhook.yaml
+index 93486d39..243b28f6 100644
+--- a/config/core/deployments/webhook.yaml
++++ b/config/core/deployments/webhook.yaml
+@@ -61,7 +61,7 @@ spec:
+         - name: WEBHOOK_NAME
+           value: eventing-webhook
+         - name: SINK_BINDING_OPT_OUT_SELECTOR
+-          value: "false"
++          value: "true"
+ 
+         securityContext:
+           allowPrivilegeEscalation: false
