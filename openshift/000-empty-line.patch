@@ -1,0 +1,11 @@
+diff --git a/config/channels/in-memory-channel/200-dispatcher-clusterrole.yaml b/config/channels/in-memory-channel/200-dispatcher-clusterrole.yaml
+index a876bae6..0d9866ea 100644
+--- a/config/channels/in-memory-channel/200-dispatcher-clusterrole.yaml
++++ b/config/channels/in-memory-channel/200-dispatcher-clusterrole.yaml
+@@ -52,4 +52,4 @@ rules:
+       - watch
+       - create
+       - update
+-      - patch
+\ No newline at end of file
++      - patch
