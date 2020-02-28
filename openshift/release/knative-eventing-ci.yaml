@@ -2378,7 +2378,7 @@ spec:
       containers:
       - name: eventing-controller
         terminationMessagePolicy: FallbackToLogsOnError
-        image: image-registry.openshift-image-registry.svc:5000/knative-eventing/knative-eventing-channel-broker
+        image: quay.io/openshift-knative/knative-eventing-channel-broker
         resources:
           requests:
             cpu: 100m
@@ -2395,11 +2395,11 @@ spec:
           - name: METRICS_DOMAIN
             value: knative.dev/eventing
           - name: BROKER_INGRESS_IMAGE
-            value: image-registry.openshift-image-registry.svc:5000/knative-eventing/knative-eventing-ingress
+            value: quay.io/openshift-knative/knative-eventing-ingress
           - name: BROKER_INGRESS_SERVICE_ACCOUNT
             value: eventing-broker-ingress
           - name: BROKER_FILTER_IMAGE
-            value: image-registry.openshift-image-registry.svc:5000/knative-eventing/knative-eventing-filter
+            value: quay.io/openshift-knative/knative-eventing-filter
           - name: BROKER_FILTER_SERVICE_ACCOUNT
             value: eventing-broker-filter
           - name: BROKER_IMAGE_PULL_SECRET_NAME
@@ -2434,7 +2434,7 @@ spec:
       containers:
       - name: eventing-controller
         terminationMessagePolicy: FallbackToLogsOnError
-        image: image-registry.openshift-image-registry.svc:5000/knative-eventing/knative-eventing-controller
+        image: quay.io/openshift-knative/knative-eventing-controller
         resources:
           requests:
             cpu: 100m
@@ -2451,11 +2451,11 @@ spec:
           - name: METRICS_DOMAIN
             value: knative.dev/eventing
           - name: CRONJOB_RA_IMAGE
-            value: image-registry.openshift-image-registry.svc:5000/knative-eventing/knative-eventing-cronjob-receive-adapter
+            value: quay.io/openshift-knative/knative-eventing-cronjob-receive-adapter
           - name: PING_IMAGE
-            value: image-registry.openshift-image-registry.svc:5000/knative-eventing/knative-eventing-ping
+            value: quay.io/openshift-knative/knative-eventing-ping
           - name: APISERVER_RA_IMAGE
-            value: image-registry.openshift-image-registry.svc:5000/knative-eventing/knative-eventing-apiserver-receive-adapter
+            value: quay.io/openshift-knative/knative-eventing-apiserver-receive-adapter
         securityContext:
           allowPrivilegeEscalation: false
         ports:
@@ -2515,7 +2515,7 @@ webhooks:
       service:
         name: eventing-webhook
         namespace: knative-eventing
-    failurePolicy: Fail
+    failurePolicy: Ignore
     sideEffects: None
     name: legacysinkbindings.webhook.sources.knative.dev
 ---
@@ -2557,7 +2557,7 @@ webhooks:
     service:
       name: eventing-webhook
       namespace: knative-eventing
-  failurePolicy: Fail
+  failurePolicy: Ignore
   sideEffects: None
   name: sinkbindings.webhook.sources.knative.dev
 ---
@@ -2582,7 +2582,7 @@ spec:
       containers:
       - name: eventing-webhook
         terminationMessagePolicy: FallbackToLogsOnError
-        image: image-registry.openshift-image-registry.svc:5000/knative-eventing/knative-eventing-webhook
+        image: quay.io/openshift-knative/knative-eventing-webhook
         resources:
           requests:
             cpu: 20m
@@ -3031,7 +3031,7 @@ spec:
       serviceAccountName: imc-controller
       containers:
       - name: controller
-        image: image-registry.openshift-image-registry.svc:5000/knative-eventing/knative-eventing-channel-controller
+        image: quay.io/openshift-knative/knative-eventing-channel-controller
         env:
           - name: CONFIG_LOGGING_NAME
             value: config-logging
@@ -3044,7 +3044,7 @@ spec:
               fieldRef:
                 fieldPath: metadata.namespace
           - name: DISPATCHER_IMAGE
-            value: image-registry.openshift-image-registry.svc:5000/knative-eventing/knative-eventing-channel-dispatcher
+            value: quay.io/openshift-knative/knative-eventing-channel-dispatcher
         securityContext:
           allowPrivilegeEscalation: false
         ports:
@@ -3073,7 +3073,7 @@ spec:
       serviceAccountName: imc-dispatcher
       containers:
       - name: dispatcher
-        image: image-registry.openshift-image-registry.svc:5000/knative-eventing/knative-eventing-channel-dispatcher
+        image: quay.io/openshift-knative/knative-eventing-channel-dispatcher
         env:
           - name: CONFIG_LOGGING_NAME
             value: config-logging
