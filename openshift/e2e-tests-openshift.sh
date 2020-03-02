@@ -1,25 +1,37 @@
 #!/bin/sh 
 
-source $(dirname $0)/../vendor/knative.dev/test-infra/scripts/e2e-tests.sh
-source $(dirname $0)/release/resolve.sh
+source "$(dirname $0)/../vendor/knative.dev/test-infra/scripts/e2e-tests.sh"
+source "$(dirname "$0")/release/resolve.sh"
 
 set -x
 
-readonly K8S_CLUSTER_OVERRIDE=$(oc config current-context | awk -F'/' '{print $2}')
-readonly API_SERVER=$(oc config view --minify | grep server | awk -F'//' '{print $2}' | awk -F':' '{print $1}')
-readonly INTERNAL_REGISTRY="${INTERNAL_REGISTRY:-"image-registry.openshift-image-registry.svc:5000"}"
-readonly USER=$KUBE_SSH_USER #satisfy e2e_flags.go#initializeFlags()
-readonly OPENSHIFT_REGISTRY="${OPENSHIFT_REGISTRY:-"registry.svc.ci.openshift.org"}"
-readonly INSECURE="${INSECURE:-"false"}"
-readonly TEST_ORIGIN_CONFORMANCE="${TEST_ORIGIN_CONFORMANCE:-"false"}"
 readonly SERVING_NAMESPACE=knative-serving
-readonly EVENTING_NAMESPACE=knative-eventing
 readonly SERVICEMESH_NAMESPACE=knative-serving-ingress
-export GATEWAY_NAMESPACE_OVERRIDE="$SERVICEMESH_NAMESPACE"
-readonly TARGET_IMAGE_PREFIX="$INTERNAL_REGISTRY/$EVENTING_NAMESPACE/knative-eventing-"
+readonly EVENTING_NAMESPACE=knative-eventing
+
+# A golang template to point the tests to the right image coordinates.
+# {{.Name}} is the name of the image, for example 'autoscale'.
+readonly TEST_IMAGE_TEMPLATE="registry.svc.ci.openshift.org/${OPENSHIFT_BUILD_NAMESPACE}/stable:knative-eventing-test-{{.Name}}"
+
+# The OLM global namespace was moved to openshift-marketplace since v4.2
+# ref: https://jira.coreos.com/browse/OLM-1190
 readonly OLM_NAMESPACE="openshift-marketplace"
 
 env
+
+function scale_up_workers(){
+  local cluster_api_ns="openshift-machine-api"
+
+  oc get machineset -n ${cluster_api_ns} --show-labels
+
+  # Get the name of the first machineset that has at least 1 replica
+  local machineset
+  machineset=$(oc get machineset -n ${cluster_api_ns} -o custom-columns="name:{.metadata.name},replicas:{.spec.replicas}" | grep " 1" | head -n 1 | awk '{print $1}')
+  # Bump the number of replicas to 6 (+ 1 + 1 == 8 workers)
+  oc patch machineset -n ${cluster_api_ns} "${machineset}" -p '{"spec":{"replicas":6}}' --type=merge
+  wait_until_machineset_scales_up ${cluster_api_ns} "${machineset}" 6
+}
+
 
 # Loops until duration (car) is exceeded or command (cdr) returns non-zero
 function timeout_non_zero() {
@@ -52,7 +64,7 @@ function install_knative_serving(){
   oc new-project $SERVING_NAMESPACE
 
   # Install CatalogSource in OLM namespace
-  oc apply -n $OLM_NAMESPACE -f openshift/olm/knative-serving.catalogsource.yaml
+  envsubst < openshift/olm/knative-serving.catalogsource.yaml | oc apply -n $OLM_NAMESPACE -f -
   timeout_non_zero 900 '[[ $(oc get pods -n $OLM_NAMESPACE | grep -c serverless) -eq 0 ]]' || return 1
   wait_until_pods_running $OLM_NAMESPACE
 
@@ -172,9 +184,6 @@ function install_knative_eventing(){
   # Deploy Knative Operators Eventing
   deploy_knative_operator eventing KnativeEventing
 
-  # Create imagestream for images generated in CI namespace
-  tag_core_images openshift/release/knative-eventing-ci.yaml
-
   # Wait for 5 pods to appear first
   timeout_non_zero 900 '[[ $(oc get pods -n $EVENTING_NAMESPACE --no-headers | wc -l) -lt 5 ]]' || return 1
   wait_until_pods_running $EVENTING_NAMESPACE || return 1
@@ -187,9 +196,6 @@ function install_knative_eventing(){
 function create_test_resources() {
   echo ">> Ensuring pods in test namespaces can access test images"
   oc policy add-role-to-group system:image-puller system:serviceaccounts --namespace=$EVENTING_NAMESPACE
-
-  echo ">> Creating imagestream tags for all test images"
-  tag_test_images test/test_images
 
   # read to array
   testNamesArray=($(cat TEST_NAMES |tr "\n" " "))
@@ -209,19 +215,6 @@ function create_test_resources() {
     oc adm policy add-cluster-role-to-user cluster-admin -z eventing-broker-ingress -n $i
   done
 
-}
-
-function tag_core_images(){
-  local resolved_file_name=$1
-
-  oc policy add-role-to-group system:image-puller system:serviceaccounts:${EVENTING_NAMESPACE} --namespace=${OPENSHIFT_BUILD_NAMESPACE}
-
-  echo ">> Creating imagestream tags for images referenced in yaml files"
-  IMAGE_NAMES=$(cat $resolved_file_name | grep -i "image:\|value:" | grep "$INTERNAL_REGISTRY" | awk '{print $2}' | awk -F '/' '{print $3}')
-  for nametag in $IMAGE_NAMES; do
-    name=$(echo $nametag | cut -d: -f1)
-    tag_built_image ${name} ${name}
-  done
 }
 
 function readTestFiles() {
@@ -260,66 +253,8 @@ function run_e2e_tests(){
     -v -tags=e2e -count=1 -timeout=70m -parallel=1 \
     ./test/e2e \
     --kubeconfig "$KUBECONFIG" \
-    --dockerrepo "quay.io/openshift-knative" \
+    --imagetemplate "$TEST_IMAGE_TEMPLATE" \
     ${options} || failed=1
-}
-
-function delete_strimzi(){
-
-  strimzi_version=`curl https://github.com/strimzi/strimzi-kafka-operator/releases/latest |  awk -F 'tag/' '{print $2}' | awk -F '"' '{print $1}' 2>/dev/null`
-
-  header_text "Delete Strimzi Cluster"
-  kubectl -n kafka delete -f "https://raw.githubusercontent.com/strimzi/strimzi-kafka-operator/${strimzi_version}/examples/kafka/kafka-persistent-single.yaml"
-
-  header_text "remove Strimzi"
-  kubectl -n kafka delete -f "https://github.com/strimzi/strimzi-kafka-operator/releases/download/${strimzi_version}/strimzi-cluster-operator-${strimzi_version}.yaml"
-  kubectl delete namespace kafka
-}
-
-function delete_istio_openshift(){
-  echo ">> Bringing down Istio"
-  oc delete ControlPlane/minimal-istio -n istio-system
-}
-
-function delete_serving_openshift() {
-  echo ">> Bringing down Serving"
-  oc delete --ignore-not-found=true -f $SERVING_RELEASE
-}
-
-function delete_knative_eventing(){
-  header "Bringing down Eventing"
-  oc delete --ignore-not-found=true -f eventing-resolved.yaml
-}
-
-function delete_in_memory_channel_provisioner(){
-  header "Bringing down In-Memory ClusterChannelProvisioner"
-  oc delete --ignore-not-found=true -f channel-resolved.yaml
-}
-
-function teardown() {
-  rm TEST_NAMES
-  delete_in_memory_channel_provisioner
-  delete_knative_eventing
-  delete_serving_openshift
-  delete_istio_openshift
-  delete_strimzi
-}
-
-function tag_test_images() {
-  local dir=$1
-  image_dirs="$(find ${dir} -mindepth 1 -maxdepth 1 -type d)"
-
-  for image_dir in ${image_dirs}; do
-    name=$(basename ${image_dir})
-    tag_built_image knative-eventing-test-${name} ${name}
-
-  done
-}
-
-function tag_built_image() {
-  local remote_name=$1
-  local local_name=$2
-  oc tag --insecure=${INSECURE} -n ${EVENTING_NAMESPACE} ${OPENSHIFT_REGISTRY}/${OPENSHIFT_BUILD_NAMESPACE}/stable:${remote_name} ${local_name}:latest
 }
 
 function run_origin_e2e() {
@@ -343,18 +278,6 @@ function run_origin_e2e() {
   mv /tmp/artifacts/tmp/artifacts/e2e-origin/e2e-origin.log /tmp/artifacts
 }
 
-function scale_up_workers(){
-  local cluster_api_ns="openshift-machine-api"
-
-  oc get machineset -n ${cluster_api_ns} --show-labels
-
-  # Get the name of the first machineset that has at least 1 replica
-  local machineset=$(oc get machineset -n ${cluster_api_ns} -o custom-columns="name:{.metadata.name},replicas:{.spec.replicas}" | grep " 1" | head -n 1 | awk '{print $1}')
-  # Bump the number of replicas to 6 (+ 1 + 1 == 8 workers)
-  oc patch machineset -n ${cluster_api_ns} ${machineset} -p '{"spec":{"replicas":6}}' --type=merge
-  wait_until_machineset_scales_up ${cluster_api_ns} ${machineset} 6
-}
-
 # Waits until the machineset in the given namespaces scales up to the
 # desired number of replicas
 # Parameters: $1 - namespace
@@ -362,8 +285,9 @@ function scale_up_workers(){
 #             $3 - desired number of replicas
 function wait_until_machineset_scales_up() {
   echo -n "Waiting until machineset $2 in namespace $1 scales up to $3 replicas"
-  for i in {1..150}; do  # timeout after 15 minutes
-    local available=$(oc get machineset -n $1 $2 -o jsonpath="{.status.availableReplicas}")
+  for _ in {1..150}; do  # timeout after 15 minutes
+    local available
+    available=$(oc get machineset -n "$1" "$2" -o jsonpath="{.status.availableReplicas}")
     if [[ ${available} -eq $3 ]]; then
       echo -e "\nMachineSet $2 in namespace $1 successfully scaled up to $3 replicas"
       return 0
@@ -371,16 +295,8 @@ function wait_until_machineset_scales_up() {
     echo -n "."
     sleep 6
   done
-  echo - "\n\nError: timeout waiting for machineset $2 in namespace $1 to scale up to $3 replicas"
+  echo - "Error: timeout waiting for machineset $2 in namespace $1 to scale up to $3 replicas"
   return 1
-}
-
-function dump_openshift_olm_state(){
-  echo ">>> subscriptions.operators.coreos.com:"
-  oc get subscriptions.operators.coreos.com -o yaml --all-namespaces   # This is for status checking.
-
-  echo ">>> catalog operator log:"
-  oc logs -n openshift-operator-lifecycle-manager deployment/catalog-operator
 }
 
 scale_up_workers || exit 1
@@ -406,10 +322,6 @@ fi
 (( !failed )) && run_e2e_tests || failed=1
 
 (( failed )) && dump_cluster_state
-
-(( failed )) && dump_openshift_olm_state
-
-teardown
 
 (( failed )) && exit 1
 
