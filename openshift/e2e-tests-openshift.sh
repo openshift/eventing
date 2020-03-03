@@ -253,7 +253,7 @@ function run_e2e_tests(){
     -v -tags=e2e -count=1 -timeout=70m -parallel=1 \
     ./test/e2e \
     --kubeconfig "$KUBECONFIG" \
-    --imagetemplate "$TEST_IMAGE_TEMPLATE" \
+    --dockerrepo "quay.io/openshift-knative" \
     ${options} || failed=1
 }
 
