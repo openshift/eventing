@@ -58,60 +58,14 @@ function install_strimzi(){
   sleep 5; while echo && kubectl get pods -n kafka | grep -v -E "(Running|Completed|STATUS)"; do sleep 5; done
 }
 
-function install_knative_serving(){
-  header "Installing Knative Serving"
-
-  oc new-project $SERVING_NAMESPACE
-
-  # Install CatalogSource in OLM namespace
-  envsubst < openshift/olm/knative-serving.catalogsource.yaml | oc apply -n $OLM_NAMESPACE -f -
-  timeout_non_zero 900 '[[ $(oc get pods -n $OLM_NAMESPACE | grep -c serverless) -eq 0 ]]' || return 1
-  wait_until_pods_running $OLM_NAMESPACE
-
-  # Deploy Serverless Operator
-  deploy_serverless_operator
-
-  # Wait for the CRD to appear
-  timeout_non_zero 900 '[[ $(oc get crd | grep -c knativeservings) -eq 0 ]]' || return 1
-
-  # Install Knative Serving
-  cat <<-EOF | oc apply -f -
-apiVersion: operator.knative.dev/v1alpha1
-kind: KnativeServing
-metadata:
-  name: knative-serving
-  namespace: ${SERVING_NAMESPACE}
-EOF
-
-  # Wait for 4 pods to appear first
-  timeout_non_zero 900 '[[ $(oc get pods -n $SERVING_NAMESPACE --no-headers | wc -l) -lt 4 ]]' || return 1
-  wait_until_pods_running $SERVING_NAMESPACE || return 1
-
-  wait_until_pods_running $SERVICEMESH_NAMESPACE || return 1
-
-  # wait_until_service_has_external_ip $SERVICEMESH_NAMESPACE istio-ingressgateway || fail_test "Ingress has no external IP"
-  # wait_until_hostname_resolves "$(kubectl get svc -n $SERVICEMESH_NAMESPACE istio-ingressgateway -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')"
-
-  header "Knative Serving Installed successfully"
-}
-
-function deploy_serverless_operator(){
-  local name="serverless-operator"
-  local operator_ns
-  operator_ns=$(kubectl get og --all-namespaces | grep global-operators | awk '{print $1}')
-
-  cat <<-EOF | oc apply -f -
-apiVersion: operators.coreos.com/v1alpha1
-kind: Subscription
-metadata:
-  name: ${name}-subscription
-  namespace: ${operator_ns}
-spec:
-  source: ${name}
-  sourceNamespace: $OLM_NAMESPACE
-  name: ${name}
-  channel: techpreview
-EOF
+function install_serverless(){
+  header "Installing Serverless Operator"
+  git clone https://github.com/openshift-knative/serverless-operator.git /tmp/serverless-operator
+  # unset OPENSHIFT_BUILD_NAMESPACE as its used in serverless-operator's CI environment as a switch
+  # to use CI built images, we want pre-built images of k-s-o and k-o-i
+  unset OPENSHIFT_BUILD_NAMESPACE
+  /tmp/serverless-operator/hack/install.sh || return 1
+  header "Serverless Operator installed successfully"
 }
 
 function create_knative_namespace(){
@@ -309,7 +263,7 @@ failed=0
 
 (( !failed )) && install_strimzi || failed=1
 
-(( !failed )) && install_knative_serving || failed=1
+(( !failed )) && install_serverless || failed=1
 
 (( !failed )) && install_knative_eventing || failed=1
 
