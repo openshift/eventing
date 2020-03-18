@@ -21,8 +21,9 @@ test -d "$CONFIGDIR" || fail "'$CONFIGDIR' is not a directory"
 # Generate CI config files
 CONFIG=$CONFIGDIR/openshift-knative-eventing-release-v$VERSION
 CURDIR=$(dirname $0)
-$CURDIR/generate-ci-config.sh knative-v$VERSION 4.2 > ${CONFIG}.yaml
-$CURDIR/generate-ci-config.sh knative-v$VERSION 4.3 > ${CONFIG}__4.3.yaml
+$CURDIR/generate-ci-config.sh knative-v$VERSION 4.3 > ${CONFIG}.yaml
+$CURDIR/generate-ci-config.sh knative-v$VERSION 4.4 > ${CONFIG}__4.5.yaml
+$CURDIR/generate-ci-config.sh knative-v$VERSION 4.5 > ${CONFIG}__4.5.yaml
 
 # Append missing lines to the mirror file.
 [ -n "$(tail -c1 $MIRROR)" ] && echo >> $MIRROR # Make sure there's a newline
