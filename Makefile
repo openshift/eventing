@@ -2,7 +2,7 @@
 
 CGO_ENABLED=0
 GOOS=linux
-CORE_IMAGES=$(shell find ./cmd -name main.go | sed 's/main.go//')
+CORE_IMAGES=$(shell find ./cmd -name main.go ! -path "./cmd/broker/*" ! -path "./cmd/mtbroker/*" | sed 's/main.go//')
 TEST_IMAGES=$(shell find ./test/test_images -mindepth 1 -maxdepth 1 -type d)
 
 # Guess location of openshift/release repo. NOTE: override this if it is not correct.
@@ -10,6 +10,10 @@ OPENSHIFT=${CURDIR}/../../github.com/openshift/release
 
 install:
 	go install $(CORE_IMAGES)
+	go build -o $(GOPATH)/bin/broker-ingress ./cmd/broker/ingress/
+	go build -o $(GOPATH)/bin/broker-filter ./cmd/broker/filter/
+	go build -o $(GOPATH)/bin/mtbroker-ingress ./cmd/mtbroker/ingress/
+	go build -o $(GOPATH)/bin/mtbroker-filter ./cmd/mtbroker/filter/
 .PHONY: install
 
 test-install:
@@ -27,6 +31,10 @@ test-origin-conformance:
 # Generate Dockerfiles used by ci-operator. The files need to be committed manually.
 generate-dockerfiles:
 	./openshift/ci-operator/generate-dockerfiles.sh openshift/ci-operator/knative-images $(CORE_IMAGES)
+	./openshift/ci-operator/generate-dockerfiles.sh openshift/ci-operator/knative-images broker-ingress
+	./openshift/ci-operator/generate-dockerfiles.sh openshift/ci-operator/knative-images broker-filter
+	./openshift/ci-operator/generate-dockerfiles.sh openshift/ci-operator/knative-images mtbroker-ingress
+	./openshift/ci-operator/generate-dockerfiles.sh openshift/ci-operator/knative-images mtbroker-filter
 	./openshift/ci-operator/generate-dockerfiles.sh openshift/ci-operator/knative-test-images $(TEST_IMAGES)
 .PHONY: generate-dockerfiles
 
