@@ -34,7 +34,7 @@ spec:
         app: sources-controller
     spec:
       containers:
-      - name: controller
+      - name: sources-controller
         # This is the Go import path for the binary that is containerized
         # and substituted here.
         image: knative.dev/eventing/cmd/sources_controller

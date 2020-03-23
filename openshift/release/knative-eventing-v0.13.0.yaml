@@ -2262,7 +2262,7 @@ spec:
     spec:
       serviceAccountName: eventing-controller
       containers:
-      - name: eventing-controller
+      - name: channel-broker-controller
         terminationMessagePolicy: FallbackToLogsOnError
         image: quay.io/openshift-knative/knative-eventing-channel-broker:v0.13.0
         resources:
@@ -2917,7 +2917,7 @@ spec:
     spec:
       serviceAccountName: imc-controller
       containers:
-      - name: controller
+      - name: imc-controller
         image: quay.io/openshift-knative/knative-eventing-channel-controller:v0.13.0
         env:
           - name: CONFIG_LOGGING_NAME
@@ -2959,7 +2959,7 @@ spec:
     spec:
       serviceAccountName: imc-dispatcher
       containers:
-      - name: dispatcher
+      - name: imc-dispatcher
         image: quay.io/openshift-knative/knative-eventing-channel-dispatcher:v0.13.0
         env:
           - name: CONFIG_LOGGING_NAME
