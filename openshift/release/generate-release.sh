@@ -17,9 +17,13 @@ fi
 resolve_resources config/ $output_file $image_prefix $tag
 
 # the MT broker:
-resolve_resources config/brokers/mt-channel-broker/ mtbroker-resolved.yaml $image_prefix $tag
-cat mtbroker-resolved.yaml >> $output_file
-rm mtbroker-resolved.yaml
+resolve_resources config/brokers/mt-channel-broker/deployments mtbroker-deployments-resolved.yaml $image_prefix $tag
+cat mtbroker-deployments-resolved.yaml >> $output_file
+rm mtbroker-deployments-resolved.yaml
+
+resolve_resources config/brokers/mt-channel-broker/roles mtbroker-roles-resolved.yaml $image_prefix $tag
+cat mtbroker-roles-resolved.yaml >> $output_file
+rm mtbroker-roles-resolved.yaml
 
 # InMemoryChannel CRD
 resolve_resources config/channels/in-memory-channel/ crd-channel-resolved.yaml $image_prefix $tag
