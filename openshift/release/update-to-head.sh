@@ -20,7 +20,6 @@ git commit -m ":open_file_folder: Update openshift specific files."
 
 # Apply patches .
 git apply openshift/patches/*
-cat openshift/999-webhook-policy_append.patch >> openshift/release/knative-eventing-ci.yaml
 git commit -am ":fire: Apply carried patches."
 
 git push -f openshift release-next
