@@ -60,7 +60,7 @@ spec:
           # them with:
           #    knative-eventing-injection: disabled
           - name: BROKER_INJECTION_DEFAULT
-            value: "true"
+            value: "false"
 
         securityContext:
           allowPrivilegeEscalation: false
