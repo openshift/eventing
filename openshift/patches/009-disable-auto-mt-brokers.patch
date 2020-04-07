@@ -1,0 +1,13 @@
+diff --git a/config/brokers/mt-channel-broker/deployments/controller.yaml b/config/brokers/mt-channel-broker/deployments/controller.yaml
+index 6374bc6b..1b5f2797 100644
+--- a/config/brokers/mt-channel-broker/deployments/controller.yaml
++++ b/config/brokers/mt-channel-broker/deployments/controller.yaml
+@@ -60,7 +60,7 @@ spec:
+           # them with:
+           #    knative-eventing-injection: disabled
+           - name: BROKER_INJECTION_DEFAULT
+-            value: "true"
++            value: "false"
+ 
+         securityContext:
+           allowPrivilegeEscalation: false
