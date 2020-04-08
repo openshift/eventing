@@ -60,7 +60,7 @@ function install_strimzi(){
 
 function install_serverless(){
   header "Installing Serverless Operator"
-  git clone https://github.com/openshift-knative/serverless-operator.git /tmp/serverless-operator
+  git clone --branch release-1.6 https://github.com/openshift-knative/serverless-operator.git /tmp/serverless-operator
   # unset OPENSHIFT_BUILD_NAMESPACE as its used in serverless-operator's CI environment as a switch
   # to use CI built images, we want pre-built images of k-s-o and k-o-i
   unset OPENSHIFT_BUILD_NAMESPACE
@@ -122,11 +122,6 @@ function install_knative_eventing(){
   header "Installing Knative Eventing"
 
   create_knative_namespace eventing
-
-  # echo ">> Patching Knative Eventing CatalogSource to reference CI produced images"
-  # CURRENT_GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-  # RELEASE_YAML="https://raw.githubusercontent.com/openshift/knative-eventing/${CURRENT_GIT_BRANCH}/openshift/release/knative-eventing-ci.yaml,https://raw.githubusercontent.com/openshift-knative/knative-eventing-operator/v0.12.0/deploy/resources/networkpolicies.yaml"
-  # sed "s|--filename=.*|--filename=${RELEASE_YAML}|"  openshift/olm/knative-eventing.catalogsource.yaml > knative-eventing.catalogsource-ci.yaml
 
   # oc apply -n $OLM_NAMESPACE -f knative-eventing.catalogsource-ci.yaml
   oc apply -n $OLM_NAMESPACE -f openshift/olm/knative-eventing.catalogsource.yaml
