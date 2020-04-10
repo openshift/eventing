@@ -1,0 +1,12 @@
+diff --git a/test/e2e/trigger_dependency_annotation_test.go b/test/e2e/trigger_dependency_annotation_test.go
+index 8eaf94b0..5d989322 100644
+--- a/test/e2e/trigger_dependency_annotation_test.go
++++ b/test/e2e/trigger_dependency_annotation_test.go
+@@ -38,6 +38,7 @@ import (
+ // Broker controller should make trigger become ready after pingSource is ready.
+ // This trigger dependency annotation is related on issue #1734.
+ func TestTriggerDependencyAnnotation(t *testing.T) {
++	t.Skip("skipping")
+ 	const (
+ 		defaultBrokerName    = pkgResources.DefaultBrokerName
+ 		triggerName          = "trigger-annotation"
