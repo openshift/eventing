@@ -197,8 +197,18 @@ function create_test_namespace(){
 }
 
 function run_e2e_tests(){
-  header "Running tests"
+  header "Running tests with Channel Based Broker"
   go_test_e2e -timeout=90m -parallel=12 ./test/e2e -brokerclass=ChannelBasedBroker -channels=messaging.knative.dev/v1alpha1:InMemoryChannel,messaging.knative.dev/v1alpha1:Channel,messaging.knative.dev/v1beta1:InMemoryChannel \
+    --kubeconfig "$KUBECONFIG" \
+    --dockerrepo "quay.io/openshift-knative" \
+    ${options} || failed=1
+
+  header "Running tests with Multi TenantChannel Based Broker"
+  oc apply -f test/config/mt-channel-broker.yaml || return 1
+  oc -n knative-eventing set env deployment/mt-broker-controller BROKER_INJECTION_DEFAULT=true || return 1
+  wait_until_pods_running $EVENTING_NAMESPACE || return 1
+
+  go_test_e2e -timeout=90m -parallel=12 ./test/e2e -brokerclass=MTChannelBasedBroker -channels=messaging.knative.dev/v1alpha1:InMemoryChannel,messaging.knative.dev/v1alpha1:Channel,messaging.knative.dev/v1beta1:InMemoryChannel \
     --kubeconfig "$KUBECONFIG" \
     --dockerrepo "quay.io/openshift-knative" \
     ${options} || failed=1
