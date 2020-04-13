@@ -197,6 +197,11 @@ function create_test_namespace(){
 }
 
 function run_e2e_tests(){
+
+  export GATEWAY_OVERRIDE=kourier
+  export GATEWAY_NAMESPACE_OVERRIDE="$SERVING_INGRESS_NAMESPACE"
+  export INGRESS_CLASS=kourier.ingress.networking.knative.dev
+
   header "Running tests with Channel Based Broker"
   go_test_e2e -timeout=90m -parallel=12 ./test/e2e -brokerclass=ChannelBasedBroker -channels=messaging.knative.dev/v1alpha1:InMemoryChannel,messaging.knative.dev/v1alpha1:Channel,messaging.knative.dev/v1beta1:InMemoryChannel \
     --kubeconfig "$KUBECONFIG" \
@@ -206,6 +211,7 @@ function run_e2e_tests(){
   go_test_e2e -timeout=90m -parallel=12 ./test/conformance -brokerclass=ChannelBasedBroker -channels=messaging.knative.dev/v1alpha1:InMemoryChannel,messaging.knative.dev/v1alpha1:Channel,messaging.knative.dev/v1beta1:InMemoryChannel \
     --kubeconfig "$KUBECONFIG" \
     --dockerrepo "quay.io/openshift-knative" \
+    --resolvabledomain "$(ingress_class)" \
     ${options} || failed=1
 
   header "Running tests with MultiTenant Channel Based Broker"
