@@ -203,7 +203,12 @@ function run_e2e_tests(){
     --dockerrepo "quay.io/openshift-knative" \
     ${options} || failed=1
 
-  header "Running tests with Multi TenantChannel Based Broker"
+  go_test_e2e -timeout=90m -parallel=12 ./test/conformance -brokerclass=ChannelBasedBroker -channels=messaging.knative.dev/v1alpha1:InMemoryChannel,messaging.knative.dev/v1alpha1:Channel,messaging.knative.dev/v1beta1:InMemoryChannel \
+    --kubeconfig "$KUBECONFIG" \
+    --dockerrepo "quay.io/openshift-knative" \
+    ${options} || failed=1
+
+  header "Running tests with MultiTenant Channel Based Broker"
   oc apply -f test/config/mt-channel-broker.yaml || return 1
   oc -n knative-eventing set env deployment/mt-broker-controller BROKER_INJECTION_DEFAULT=true || return 1
   wait_until_pods_running $EVENTING_NAMESPACE || return 1
