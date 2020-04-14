@@ -1161,7 +1161,6 @@ spec:
     plural: configmappropagations
     singular: configmappropagation
     categories:
-      - all
       - knative
       - eventing
     shortNames:
@@ -2136,6 +2135,9 @@ spec:
                       kind:
                         type: string
                         minLength: 1
+                      namespace:
+                        type: string
+                        minLength: 1
                       name:
                         type: string
                         minLength: 1
@@ -2184,6 +2186,9 @@ spec:
                         type: string
                         minLength: 1
                       kind:
+                        type: string
+                        minLength: 1
+                      namespace:
                         type: string
                         minLength: 1
                       name:
