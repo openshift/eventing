@@ -38,7 +38,6 @@ import (
 // Broker controller should make trigger become ready after pingSource is ready.
 // This trigger dependency annotation is related on issue #1734.
 func TestTriggerDependencyAnnotation(t *testing.T) {
-	t.Skip("skipping")
 	const (
 		defaultBrokerName    = pkgResources.DefaultBrokerName
 		triggerName          = "trigger-annotation"
