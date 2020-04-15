@@ -142,60 +142,6 @@ function install_knative_eventing(){
   #oc get pod -n knative-eventing -o yaml | grep image: | grep -v knative-eventing-operator | grep -v ${INTERNAL_REGISTRY} && return 1 || true
 }
 
-function create_test_resources() {
-  echo ">> Ensuring pods in test namespaces can access test images"
-  oc policy add-role-to-group system:image-puller system:serviceaccounts --namespace=$EVENTING_NAMESPACE
-
-  # read to array
-  testNamesArray=($(cat TEST_NAMES |tr "\n" " "))
-
-  # process array to create the NS and give SCC
-  for i in "${testNamesArray[@]}"
-  do
-    oc create serviceaccount eventing-broker-ingress -n $i
-    oc create serviceaccount eventing-broker-filter -n $i
-    oc adm policy add-scc-to-user anyuid -z default -n $i
-    oc adm policy add-scc-to-user privileged -z default -n $i
-    oc adm policy add-scc-to-user anyuid -z eventing-broker-filter -n $i
-    oc adm policy add-scc-to-user privileged -z eventing-broker-filter -n $i
-    oc adm policy add-cluster-role-to-user cluster-admin -z eventing-broker-filter -n $i
-    oc adm policy add-scc-to-user anyuid -z eventing-broker-ingress -n $i
-    oc adm policy add-scc-to-user privileged -z eventing-broker-ingress -n $i
-    oc adm policy add-cluster-role-to-user cluster-admin -z eventing-broker-ingress -n $i
-  done
-
-}
-
-function readTestFiles() {
-  for test in "./test/e2e"/*_test.go; do
-    grep "func Test" $test | awk '{print $2}' | awk -F'(' '{print $1}' >> TEST_NAMES;
-  done
-
- sed -i "s/\([A-Z]\)/-\L\1/g" TEST_NAMES
- sed -i "s/^-//" TEST_NAMES
-
- # add new test name structure to the list:
- echo "test-default-broker-with-many-deprecated-triggers" >> TEST_NAMES;
- echo "test-default-broker-with-many-attribute-triggers" >> TEST_NAMES;
- echo "test-default-broker-with-many-attribute-and-extension-triggers" >> TEST_NAMES;
-
- echo "test-channel-namespace-defaulter-in-memory-channel" >> TEST_NAMES;
- echo "test-channel-cluster-defaulter-in-memory-channel" >> TEST_NAMES;
-}
-
-function create_test_namespace(){
-  # read to array
-  testNamesArray=($(cat TEST_NAMES |tr "\n" " "))
-
-  # process array to create the NS and give SCC
-  for i in "${testNamesArray[@]}"
-  do
-    oc new-project $i
-    oc adm policy add-scc-to-user anyuid -z default -n $i
-    oc adm policy add-scc-to-user privileged -z default -n $i
-  done
-}
-
 function run_e2e_tests(){
   header "Running tests with Channel Based Broker"
   go_test_e2e -timeout=90m -parallel=12 ./test/e2e -brokerclass=ChannelBasedBroker -channels=messaging.knative.dev/v1alpha1:InMemoryChannel,messaging.knative.dev/v1alpha1:Channel,messaging.knative.dev/v1beta1:InMemoryChannel \
@@ -258,10 +204,6 @@ function wait_until_machineset_scales_up() {
 
 scale_up_workers || exit 1
 
-readTestFiles || exit 1
-
-create_test_namespace || exit 1
-
 failed=0
 
 (( !failed )) && install_strimzi || failed=1
@@ -269,8 +211,6 @@ failed=0
 (( !failed )) && install_serverless || failed=1
 
 (( !failed )) && install_knative_eventing || failed=1
-
-(( !failed )) && create_test_resources || failed=1
 
 if [[ $TEST_ORIGIN_CONFORMANCE == true ]]; then
   (( !failed )) && run_origin_e2e || failed=1
