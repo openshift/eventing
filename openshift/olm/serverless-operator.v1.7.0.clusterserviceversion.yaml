@@ -365,10 +365,18 @@ spec:
                       value: registry.svc.ci.openshift.org/openshift/knative-v0.14.0:knative-eventing-channel-controller
                     - name: IMAGE_imc-dispatcher
                       value: registry.svc.ci.openshift.org/openshift/knative-v0.14.0:knative-eventing-channel-dispatcher
+                    - name: IMAGE_ingress
+                      value: registry.svc.ci.openshift.org/openshift/knative-v0.14.0:knative-eventing-mtbroker-ingress
+                    - name: IMAGE_filter
+                      value: registry.svc.ci.openshift.org/openshift/knative-v0.14.0:knative-eventing-mtbroker-filter
+                    - name: IMAGE_mt-broker-controller
+                      value: registry.svc.ci.openshift.org/openshift/knative-v0.14.0:knative-eventing-mtchannel-broker
                     - name: IMAGE_CRONJOB_RA_IMAGE
                       value: registry.svc.ci.openshift.org/openshift/knative-v0.14.0:knative-eventing-cronjob-receive-adapter
                     - name: IMAGE_PING_IMAGE
-                      value: registry.svc.ci.openshift.org/openshift/knative-v0.14.0:knative-eventing-ping
+                      value: registry.svc.ci.openshift.org/openshift/knative-v0.14.0:knative-eventing-adapter
+                    - name: IMAGE_JOB_RUNNER_IMAGE
+                      value: registry.svc.ci.openshift.org/openshift/knative-v0.14.0:knative-eventing-jobrunner
                     - name: IMAGE_APISERVER_RA_IMAGE
                       value: registry.svc.ci.openshift.org/openshift/knative-v0.14.0:knative-eventing-apiserver-receive-adapter
                     - name: IMAGE_BROKER_INGRESS_IMAGE
@@ -518,6 +526,12 @@ spec:
       image: registry.svc.ci.openshift.org/openshift/knative-v0.14.0:knative-eventing-webhook
     - name: IMAGE_broker-controller
       image: registry.svc.ci.openshift.org/openshift/knative-v0.14.0:knative-eventing-channel-broker
+    - name: IMAGE_ingress
+      image: registry.svc.ci.openshift.org/openshift/knative-v0.14.0:knative-eventing-mtbroker-ingress
+    - name: IMAGE_filter
+      image: registry.svc.ci.openshift.org/openshift/knative-v0.14.0:knative-eventing-mtbroker-filter
+    - name: IMAGE_mt-broker-controller
+      image: registry.svc.ci.openshift.org/openshift/knative-v0.14.0:knative-eventing-mtchannel-broker
     - name: IMAGE_imc-controller
       image: registry.svc.ci.openshift.org/openshift/knative-v0.14.0:knative-eventing-channel-controller
     - name: IMAGE_imc-dispatcher
@@ -525,7 +539,9 @@ spec:
     - name: IMAGE_CRONJOB_RA_IMAGE
       image: registry.svc.ci.openshift.org/openshift/knative-v0.14.0:knative-eventing-cronjob-receive-adapter
     - name: IMAGE_PING_IMAGE
-      image: registry.svc.ci.openshift.org/openshift/knative-v0.14.0:knative-eventing-ping
+      image: registry.svc.ci.openshift.org/openshift/knative-v0.14.0:knative-eventing-adapter
+    - name: IMAGE_JOB_RUNNER_IMAGE
+      image: registry.svc.ci.openshift.org/openshift/knative-v0.14.0:knative-eventing-jobrunner
     - name: IMAGE_APISERVER_RA_IMAGE
       image: registry.svc.ci.openshift.org/openshift/knative-v0.14.0:knative-eventing-apiserver-receive-adapter
     - name: IMAGE_BROKER_INGRESS_IMAGE
