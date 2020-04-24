@@ -60,9 +60,10 @@ function install_strimzi(){
 
 function install_serverless(){
   header "Installing Serverless Operator"
-  git clone --branch release-1.6 https://github.com/openshift-knative/serverless-operator.git /tmp/serverless-operator
+  git clone --branch release-1.7 https://github.com/openshift-knative/serverless-operator.git /tmp/serverless-operator
   # unset OPENSHIFT_BUILD_NAMESPACE as its used in serverless-operator's CI environment as a switch
   # to use CI built images, we want pre-built images of k-s-o and k-o-i
+  cp openshift/olm/serverless-operator.v1.7.0.clusterserviceversion.yaml /tmp/serverless-operator/olm-catalog/serverless-operator/1.7.0/serverless-operator.v1.7.0.clusterserviceversion.yaml
   unset OPENSHIFT_BUILD_NAMESPACE
   /tmp/serverless-operator/hack/install.sh || return 1
   header "Serverless Operator installed successfully"
