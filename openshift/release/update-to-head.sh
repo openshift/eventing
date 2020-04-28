@@ -14,6 +14,7 @@ git checkout upstream/master -B release-next
 git fetch openshift master
 git checkout openshift/master openshift OWNERS_ALIASES OWNERS Makefile
 make generate-dockerfiles
+git apply openshift/011-remove-imc-dispatcher-resources.patch
 make RELEASE=ci generate-release
 git add openshift OWNERS_ALIASES OWNERS Makefile
 git commit -m ":open_file_folder: Update openshift specific files."
