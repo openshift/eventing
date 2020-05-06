@@ -47,7 +47,8 @@ EOF
 core_images=$(find ./openshift/ci-operator/knative-images -mindepth 1 -maxdepth 1 -type d | LC_COLLATE=posix sort)
 for img in $core_images; do
   image_base=$(basename $img)
-  to_image=$(echo ${image_base//_/-})
+  to_image=$(echo ${image_base//[_.]/-})
+  to_image=$(echo ${to_image//v0/upgrade-v0})
   cat <<EOF
 - dockerfile_path: openshift/ci-operator/knative-images/$image_base/Dockerfile
   from: base
