@@ -60,7 +60,7 @@ function install_strimzi(){
 
 function install_serverless(){
   header "Installing Serverless Operator"
-  git clone https://github.com/openshift-knative/serverless-operator.git /tmp/serverless-operator
+  git clone --branch release-1.7 https://github.com/openshift-knative/serverless-operator.git /tmp/serverless-operator
   # unset OPENSHIFT_BUILD_NAMESPACE as its used in serverless-operator's CI environment as a switch
   # to use CI built images, we want pre-built images of k-s-o and k-o-i
   unset OPENSHIFT_BUILD_NAMESPACE
@@ -68,84 +68,84 @@ function install_serverless(){
   header "Serverless Operator installed successfully"
 }
 
-function create_knative_namespace(){
-  local COMPONENT="knative-$1"
+# function create_knative_namespace(){
+#   local COMPONENT="knative-$1"
 
-  cat <<-EOF | oc apply -f -
-	apiVersion: v1
-	kind: Namespace
-	metadata:
-	  name: ${COMPONENT}
-	EOF
-}
+#   cat <<-EOF | oc apply -f -
+# 	apiVersion: v1
+# 	kind: Namespace
+# 	metadata:
+# 	  name: ${COMPONENT}
+# 	EOF
+# }
 
-function deploy_knative_operator(){
-  local COMPONENT="knative-$1"
-  local API_GROUP=$1
-  local KIND=$2
+# function deploy_knative_operator(){
+#   local COMPONENT="knative-$1"
+#   local API_GROUP=$1
+#   local KIND=$2
 
-  cat <<-EOF | oc apply -f -
-	apiVersion: v1
-	kind: Namespace
-	metadata:
-	  name: ${COMPONENT}
-	EOF
-  if oc get crd operatorgroups.operators.coreos.com >/dev/null 2>&1; then
-    cat <<-EOF | oc apply -f -
-	apiVersion: operators.coreos.com/v1
-	kind: OperatorGroup
-	metadata:
-	  name: ${COMPONENT}
-	  namespace: ${COMPONENT}
-	EOF
-  fi
-  cat <<-EOF | oc apply -f -
-	apiVersion: operators.coreos.com/v1alpha1
-	kind: Subscription
-	metadata:
-	  name: ${COMPONENT}-subscription
-	  generateName: ${COMPONENT}-
-	  namespace: ${COMPONENT}
-	spec:
-	  source: ${COMPONENT}-operator
-	  sourceNamespace: $OLM_NAMESPACE
-	  name: ${COMPONENT}-operator
-	  channel: alpha
-	EOF
+#   cat <<-EOF | oc apply -f -
+# 	apiVersion: v1
+# 	kind: Namespace
+# 	metadata:
+# 	  name: ${COMPONENT}
+# 	EOF
+#   if oc get crd operatorgroups.operators.coreos.com >/dev/null 2>&1; then
+#     cat <<-EOF | oc apply -f -
+# 	apiVersion: operators.coreos.com/v1
+# 	kind: OperatorGroup
+# 	metadata:
+# 	  name: ${COMPONENT}
+# 	  namespace: ${COMPONENT}
+# 	EOF
+#   fi
+#   cat <<-EOF | oc apply -f -
+# 	apiVersion: operators.coreos.com/v1alpha1
+# 	kind: Subscription
+# 	metadata:
+# 	  name: ${COMPONENT}-subscription
+# 	  generateName: ${COMPONENT}-
+# 	  namespace: ${COMPONENT}
+# 	spec:
+# 	  source: ${COMPONENT}-operator
+# 	  sourceNamespace: $OLM_NAMESPACE
+# 	  name: ${COMPONENT}-operator
+# 	  channel: alpha
+# 	EOF
 
-  # # Wait until the server knows about the Install CRD before creating
-  # # an instance of it below
-  timeout_non_zero 60 '[[ $(oc get crd knative${API_GROUP}s.${API_GROUP}.knative.dev -o jsonpath="{.status.acceptedNames.kind}" | grep -c $KIND) -eq 0 ]]' || return 1
-}
+#   # # Wait until the server knows about the Install CRD before creating
+#   # # an instance of it below
+#   timeout_non_zero 60 '[[ $(oc get crd knative${API_GROUP}s.${API_GROUP}.knative.dev -o jsonpath="{.status.acceptedNames.kind}" | grep -c $KIND) -eq 0 ]]' || return 1
+# }
 
-function install_knative_eventing(){
-  header "Installing Knative Eventing"
+# function install_knative_eventing(){
+#   header "Installing Knative Eventing"
 
-  create_knative_namespace eventing
+#   create_knative_namespace eventing
 
-  # echo ">> Patching Knative Eventing CatalogSource to reference CI produced images"
-  # CURRENT_GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-  # RELEASE_YAML="https://raw.githubusercontent.com/openshift/knative-eventing/${CURRENT_GIT_BRANCH}/openshift/release/knative-eventing-ci.yaml,https://raw.githubusercontent.com/openshift-knative/knative-eventing-operator/v0.12.0/deploy/resources/networkpolicies.yaml"
-  # sed "s|--filename=.*|--filename=${RELEASE_YAML}|"  openshift/olm/knative-eventing.catalogsource.yaml > knative-eventing.catalogsource-ci.yaml
+#   # echo ">> Patching Knative Eventing CatalogSource to reference CI produced images"
+#   # CURRENT_GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+#   # RELEASE_YAML="https://raw.githubusercontent.com/openshift/knative-eventing/${CURRENT_GIT_BRANCH}/openshift/release/knative-eventing-ci.yaml,https://raw.githubusercontent.com/openshift-knative/knative-eventing-operator/v0.12.0/deploy/resources/networkpolicies.yaml"
+#   # sed "s|--filename=.*|--filename=${RELEASE_YAML}|"  openshift/olm/knative-eventing.catalogsource.yaml > knative-eventing.catalogsource-ci.yaml
 
-  # oc apply -n $OLM_NAMESPACE -f knative-eventing.catalogsource-ci.yaml
-  oc apply -n $OLM_NAMESPACE -f openshift/olm/knative-eventing.catalogsource.yaml
-  timeout_non_zero 900 '[[ $(oc get pods -n $OLM_NAMESPACE | grep -c knative-eventing) -eq 0 ]]' || return 1
-  wait_until_pods_running $OLM_NAMESPACE
+#   # oc apply -n $OLM_NAMESPACE -f knative-eventing.catalogsource-ci.yaml
+#   oc apply -n $OLM_NAMESPACE -f openshift/olm/knative-eventing.catalogsource.yaml
+#   timeout_non_zero 900 '[[ $(oc get pods -n $OLM_NAMESPACE | grep -c knative-eventing) -eq 0 ]]' || return 1
+#   wait_until_pods_running $OLM_NAMESPACE
 
-  oc get pod -n $OLM_NAMESPACE -o yaml
+#   oc get pod -n $OLM_NAMESPACE -o yaml
  
-  # Deploy Knative Operators Eventing
-  deploy_knative_operator eventing KnativeEventing
+#   # Deploy Knative Operators Eventing
+#   deploy_knative_operator eventing KnativeEventing
 
-  # Wait for 5 pods to appear first
-  timeout_non_zero 900 '[[ $(oc get pods -n $EVENTING_NAMESPACE --no-headers | wc -l) -lt 5 ]]' || return 1
-  wait_until_pods_running $EVENTING_NAMESPACE || return 1
+#   # Wait for 5 pods to appear first
+#   timeout_non_zero 900 '[[ $(oc get pods -n $EVENTING_NAMESPACE --no-headers | wc -l) -lt 5 ]]' || return 1
+#   wait_until_pods_running $EVENTING_NAMESPACE || return 1
 
-  # Assert that there are no images used that are not CI images (which should all be using the $INTERNAL_REGISTRY)
-  # (except for the knative-eventing-operator)
-  #oc get pod -n knative-eventing -o yaml | grep image: | grep -v knative-eventing-operator | grep -v ${INTERNAL_REGISTRY} && return 1 || true
-}
+#   # Assert that there are no images used that are not CI images (which should all be using the $INTERNAL_REGISTRY)
+#   # (except for the knative-eventing-operator)
+#   #oc get pod -n knative-eventing -o yaml | grep image: | grep -v knative-eventing-operator | grep -v ${INTERNAL_REGISTRY} && return 1 || true
+# }
 
 function run_e2e_tests(){
   header "Running tests"
