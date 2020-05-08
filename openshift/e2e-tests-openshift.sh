@@ -207,7 +207,7 @@ failed=0
 
 (( !failed )) && install_serverless || failed=1
 
-(( !failed )) && install_knative_eventing || failed=1
+# (( !failed )) && install_knative_eventing || failed=1
 
 if [[ $TEST_ORIGIN_CONFORMANCE == true ]]; then
   (( !failed )) && run_origin_e2e || failed=1
