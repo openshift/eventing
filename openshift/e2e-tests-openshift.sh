@@ -60,7 +60,7 @@ function install_serverless(){
 function run_e2e_tests(){
   header "Running tests"
   report_go_test \
-    -v -tags=e2e -count=1 -timeout=70m -parallel=1 \
+    -v -tags=e2e -count=1 -timeout=70m -parallel=12 \
     ./test/e2e \
     --kubeconfig "$KUBECONFIG" \
     --dockerrepo "quay.io/openshift-knative" \
