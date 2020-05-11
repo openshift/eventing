@@ -5,17 +5,7 @@ source "$(dirname "$0")/release/resolve.sh"
 
 set -x
 
-readonly SERVING_NAMESPACE=knative-serving
-readonly SERVICEMESH_NAMESPACE=knative-serving-ingress
 readonly EVENTING_NAMESPACE=knative-eventing
-
-# A golang template to point the tests to the right image coordinates.
-# {{.Name}} is the name of the image, for example 'autoscale'.
-readonly TEST_IMAGE_TEMPLATE="registry.svc.ci.openshift.org/${OPENSHIFT_BUILD_NAMESPACE}/stable:knative-eventing-test-{{.Name}}"
-
-# The OLM global namespace was moved to openshift-marketplace since v4.2
-# ref: https://jira.coreos.com/browse/OLM-1190
-readonly OLM_NAMESPACE="openshift-marketplace"
 
 env
 
@@ -31,7 +21,6 @@ function scale_up_workers(){
   oc patch machineset -n ${cluster_api_ns} "${machineset}" -p '{"spec":{"replicas":6}}' --type=merge
   wait_until_machineset_scales_up ${cluster_api_ns} "${machineset}" 6
 }
-
 
 # Loops until duration (car) is exceeded or command (cdr) returns non-zero
 function timeout_non_zero() {
@@ -60,86 +49,13 @@ function install_strimzi(){
 
 function install_serverless(){
   header "Installing Serverless Operator"
-  git clone --branch release-1.6 https://github.com/openshift-knative/serverless-operator.git /tmp/serverless-operator
+  git clone --branch eventing-014-again https://github.com/aliok/serverless-operator.git /tmp/serverless-operator
+  #cp openshift/olm/serverless-operator.v1.7.0.clusterserviceversion.yaml /tmp/serverless-operator/olm-catalog/serverless-operator/1.7.0/serverless-operator.v1.7.0.clusterserviceversion.yaml
   # unset OPENSHIFT_BUILD_NAMESPACE as its used in serverless-operator's CI environment as a switch
   # to use CI built images, we want pre-built images of k-s-o and k-o-i
   unset OPENSHIFT_BUILD_NAMESPACE
   /tmp/serverless-operator/hack/install.sh || return 1
   header "Serverless Operator installed successfully"
-}
-
-function create_knative_namespace(){
-  local COMPONENT="knative-$1"
-
-  cat <<-EOF | oc apply -f -
-	apiVersion: v1
-	kind: Namespace
-	metadata:
-	  name: ${COMPONENT}
-	EOF
-}
-
-function deploy_knative_operator(){
-  local COMPONENT="knative-$1"
-  local API_GROUP=$1
-  local KIND=$2
-
-  cat <<-EOF | oc apply -f -
-	apiVersion: v1
-	kind: Namespace
-	metadata:
-	  name: ${COMPONENT}
-	EOF
-  if oc get crd operatorgroups.operators.coreos.com >/dev/null 2>&1; then
-    cat <<-EOF | oc apply -f -
-	apiVersion: operators.coreos.com/v1
-	kind: OperatorGroup
-	metadata:
-	  name: ${COMPONENT}
-	  namespace: ${COMPONENT}
-	EOF
-  fi
-  cat <<-EOF | oc apply -f -
-	apiVersion: operators.coreos.com/v1alpha1
-	kind: Subscription
-	metadata:
-	  name: ${COMPONENT}-subscription
-	  generateName: ${COMPONENT}-
-	  namespace: ${COMPONENT}
-	spec:
-	  source: ${COMPONENT}-operator
-	  sourceNamespace: $OLM_NAMESPACE
-	  name: ${COMPONENT}-operator
-	  channel: alpha
-	EOF
-
-  # # Wait until the server knows about the Install CRD before creating
-  # # an instance of it below
-  timeout_non_zero 60 '[[ $(oc get crd knative${API_GROUP}s.${API_GROUP}.knative.dev -o jsonpath="{.status.acceptedNames.kind}" | grep -c $KIND) -eq 0 ]]' || return 1
-}
-
-function install_knative_eventing(){
-  header "Installing Knative Eventing"
-
-  create_knative_namespace eventing
-
-  # oc apply -n $OLM_NAMESPACE -f knative-eventing.catalogsource-ci.yaml
-  oc apply -n $OLM_NAMESPACE -f openshift/olm/knative-eventing.catalogsource.yaml
-  timeout_non_zero 900 '[[ $(oc get pods -n $OLM_NAMESPACE | grep -c knative-eventing) -eq 0 ]]' || return 1
-  wait_until_pods_running $OLM_NAMESPACE
-
-  oc get pod -n $OLM_NAMESPACE -o yaml
- 
-  # Deploy Knative Operators Eventing
-  deploy_knative_operator eventing KnativeEventing
-
-  # Wait for 5 pods to appear first
-  timeout_non_zero 900 '[[ $(oc get pods -n $EVENTING_NAMESPACE --no-headers | wc -l) -lt 5 ]]' || return 1
-  wait_until_pods_running $EVENTING_NAMESPACE || return 1
-
-  # Assert that there are no images used that are not CI images (which should all be using the $INTERNAL_REGISTRY)
-  # (except for the knative-eventing-operator)
-  #oc get pod -n knative-eventing -o yaml | grep image: | grep -v knative-eventing-operator | grep -v ${INTERNAL_REGISTRY} && return 1 || true
 }
 
 function run_e2e_tests(){
@@ -209,8 +125,6 @@ failed=0
 (( !failed )) && install_strimzi || failed=1
 
 (( !failed )) && install_serverless || failed=1
-
-(( !failed )) && install_knative_eventing || failed=1
 
 if [[ $TEST_ORIGIN_CONFORMANCE == true ]]; then
   (( !failed )) && run_origin_e2e || failed=1
