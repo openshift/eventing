@@ -1663,7 +1663,7 @@ metadata:
 data:
   default-br-config: |
     clusterDefault:
-      brokerClass: ChannelBasedBroker
+      brokerClass: MTChannelBasedBroker
       apiVersion: v1
       kind: ConfigMap
       name: config-br-default-channel

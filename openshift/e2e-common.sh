@@ -96,26 +96,17 @@ function install_serverless(){
 }
 
 function run_e2e_tests(){
-  header "Running tests with Channel Based Broker"
 
-  local test_name=$1
-  local failed=0
-  local channels=messaging.knative.dev/v1alpha1:InMemoryChannel,messaging.knative.dev/v1alpha1:Channel,messaging.knative.dev/v1beta1:InMemoryChannel
-  local common_opts="-channels=$channels --kubeconfig $KUBECONFIG --imagetemplate $TEST_IMAGE_TEMPLATE $options"
+  header "Running tests with Single Tenant Channel Based Broker"
+  oc apply -f test/config/st-channel-broker.yaml || return 1
+  wait_until_pods_running $EVENTING_NAMESPACE || return 1
+  go_test_e2e -timeout=90m -parallel=12 ./test/e2e -brokerclass=ChannelBasedBroker -channels=messaging.knative.dev/v1alpha1:InMemoryChannel,messaging.knative.dev/v1alpha1:Channel,messaging.knative.dev/v1beta1:InMemoryChannel \
+    --kubeconfig "$KUBECONFIG" \
+    --imagetemplate "$TEST_IMAGE_TEMPLATE" \
+    ${options} || failed=1
 
-  if [ -n "$test_name" ]; then # Running a single test.
-    go_test_e2e -timeout=15m -parallel=1 ./test/e2e \
-      -run "^(${test_name})$" \
-      -brokerclass=ChannelBasedBroker \
-      "$common_opts" || failed=$?
-  else
-    go_test_e2e -timeout=90m -parallel=12 ./test/e2e \
-      -brokerclass=ChannelBasedBroker \
-      "$common_opts" || failed=$?
-  fi
-
-  header "Running tests with Multi TenantChannel Based Broker"
-  oc apply -f test/config/mt-channel-broker.yaml || return 1
+  header "Running tests with Multi Tenant Channel Based Broker"
+  oc apply -f config/core/configmaps/default-broker.yaml || return 1
   oc -n knative-eventing set env deployment/mt-broker-controller BROKER_INJECTION_DEFAULT=true || return 1
   wait_until_pods_running $EVENTING_NAMESPACE || return 1
 
