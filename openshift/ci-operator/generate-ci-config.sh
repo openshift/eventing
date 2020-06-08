@@ -1,10 +1,11 @@
 #!/bin/bash
 
 branch=${1-'knative-v0.6.0'}
-openshift=${2-'4.2'}
+openshift=${2-'4.3'}
 
 cat <<EOF
 tag_specification:
+  cluster: https://api.ci.openshift.org
   name: '$openshift'
   namespace: ocp
 promotion:
@@ -13,6 +14,7 @@ promotion:
   name: $branch
 base_images:
   base:
+    cluster: https://api.ci.openshift.org
     name: '$openshift'
     namespace: ocp
     tag: base
