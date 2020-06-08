@@ -40,6 +40,7 @@ done
 cd $OPENSHIFT
 echo "Generating PROW files in $OPENSHIFT"
 make jobs
+make ci-operator-config
 
 echo "==== Changes made to $OPENSHIFT ===="
 git status
