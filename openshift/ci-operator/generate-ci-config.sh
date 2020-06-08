@@ -2,6 +2,7 @@
 
 branch=${1-'knative-v0.6.0'}
 openshift=${2-'4.3'}
+promotion_disabled=${3-false}
 
 cat <<EOF
 tag_specification:
@@ -9,6 +10,7 @@ tag_specification:
   name: '$openshift'
   namespace: ocp
 promotion:
+  disabled: $promotion_disabled
   cluster: https://api.ci.openshift.org
   namespace: openshift
   name: $branch
