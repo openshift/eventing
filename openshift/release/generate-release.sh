@@ -5,11 +5,12 @@ source $(dirname $0)/resolve.sh
 release=$1
 
 output_file="openshift/release/knative-eventing-${release}.yaml"
-image_prefix="quay.io/openshift-knative/knative-eventing-"
 
 if [ $release = "ci" ]; then
-    tag="latest"
+    image_prefix="image-registry.openshift-image-registry.svc:5000/knative-eventing/knative-eventing-"
+    tag=""
 else
+    image_prefix="quay.io/openshift-knative/knative-eventing-"
     tag=$release
 fi
 
