@@ -29,7 +29,7 @@ $CURDIR/generate-ci-config.sh knative-v$VERSION 4.5 > ${CONFIG}__4.5.yaml
 [ -n "$(tail -c1 $MIRROR)" ] && echo >> $MIRROR # Make sure there's a newline
 core_images=$(find ./openshift/ci-operator/knative-images -mindepth 1 -maxdepth 1 -type d | LC_COLLATE=posix sort)
 for IMAGE in $core_images; do
-    NAME=knative-eventing-$(basename $IMAGE | sed 's/_/-/' | sed 's/_/-/')
+    NAME=knative-eventing-$(basename $IMAGE | sed 's/_/-/' | sed 's/_/-/' | sed 's/[_.]/-/' | sed 's/[_.]/-/' | sed 's/v0/upgrade-v0/')
     echo "Adding $NAME to mirror file"
     LINE="registry.svc.ci.openshift.org/openshift/knative-v$VERSION:$NAME quay.io/openshift-knative/$NAME:v$VERSION"
     # Add $LINE if not already present
@@ -41,7 +41,6 @@ cd $OPENSHIFT
 echo "Generating PROW files in $OPENSHIFT"
 make jobs
 make ci-operator-config
-
 echo "==== Changes made to $OPENSHIFT ===="
 git status
 echo "==== Commit changes to $OPENSHIFT and create a PR"
