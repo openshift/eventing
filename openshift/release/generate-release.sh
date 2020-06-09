@@ -3,13 +3,15 @@
 source $(dirname $0)/resolve.sh
 
 release=$1
+suffix=$2
 
-output_file="openshift/release/knative-eventing-${release}.yaml"
-
-if [ $release = "ci" ]; then
-    image_prefix="image-registry.openshift-image-registry.svc:5000/knative-eventing/knative-eventing-"
+if [ $suffix = "ci" ]; then
+    output_file="openshift/release/knative-eventing-${suffix}.yaml"
+    image_prefix="registry.svc.ci.openshift.org/openshift/knative-${release}:knative-eventing-"
     tag=""
 else
+    suffix=${release}
+    output_file="openshift/release/knative-eventing-${suffix}.yaml"
     image_prefix="quay.io/openshift-knative/knative-eventing-"
     tag=$release
 fi
@@ -23,13 +25,13 @@ cat crd-channel-resolved.yaml >> $output_file
 rm crd-channel-resolved.yaml
 
 # the Channel Broker:
-output_file="openshift/release/knative-eventing-channelbroker-${release}.yaml"
+output_file="openshift/release/knative-eventing-channelbroker-${suffix}.yaml"
 resolve_resources config/brokers/channel-broker/ channelbroker-resolved.yaml $image_prefix $tag
 cat channelbroker-resolved.yaml >> $output_file
 rm channelbroker-resolved.yaml
 
 # the MT Broker:
-output_file="openshift/release/knative-eventing-mtbroker-${release}.yaml"
+output_file="openshift/release/knative-eventing-mtbroker-${suffix}.yaml"
 resolve_resources config/brokers/mt-channel-broker/ mtbroker-resolved.yaml $image_prefix $tag
 cat mtbroker-resolved.yaml >> $output_file
 rm mtbroker-resolved.yaml
