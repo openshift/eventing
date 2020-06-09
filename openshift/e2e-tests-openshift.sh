@@ -147,7 +147,7 @@ function run_e2e_tests(){
   header "Running tests with Channel Based Broker"
   go_test_e2e -timeout=90m -parallel=12 ./test/e2e -brokerclass=ChannelBasedBroker -channels=messaging.knative.dev/v1alpha1:InMemoryChannel,messaging.knative.dev/v1alpha1:Channel,messaging.knative.dev/v1beta1:InMemoryChannel \
     --kubeconfig "$KUBECONFIG" \
-    --dockerrepo "quay.io/openshift-knative" \
+    --imagetemplate "$TEST_IMAGE_TEMPLATE" \
     ${options} || failed=1
 
   header "Running tests with Multi TenantChannel Based Broker"
@@ -157,7 +157,7 @@ function run_e2e_tests(){
 
   go_test_e2e -timeout=90m -parallel=12 ./test/e2e -brokerclass=MTChannelBasedBroker -channels=messaging.knative.dev/v1alpha1:InMemoryChannel,messaging.knative.dev/v1alpha1:Channel,messaging.knative.dev/v1beta1:InMemoryChannel \
     --kubeconfig "$KUBECONFIG" \
-    --dockerrepo "quay.io/openshift-knative" \
+    --imagetemplate "$TEST_IMAGE_TEMPLATE" \
     ${options} || failed=1
 }
 
