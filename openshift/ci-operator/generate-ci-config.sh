@@ -18,7 +18,6 @@ promotion:
   name: $branch
 base_images:
   base:
-    cluster: https://api.ci.openshift.org
     name: '$openshift'
     namespace: ocp
     tag: base
