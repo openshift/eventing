@@ -171,22 +171,18 @@ function run_e2e_tests(){
 
   local test_name=$1
   local failed=0
+  local channels=messaging.knative.dev/v1alpha1:InMemoryChannel,messaging.knative.dev/v1alpha1:Channel,messaging.knative.dev/v1beta1:InMemoryChannel
+  local common_opts="-channels=$channels --kubeconfig $KUBECONFIG --imagetemplate $TEST_IMAGE_TEMPLATE $options"
 
   if [ -n "$test_name" ]; then # Running a single test.
     go_test_e2e -timeout=15m -parallel=1 ./test/e2e \
       -run "^(${test_name})$" \
       -brokerclass=ChannelBasedBroker \
-      -channels=messaging.knative.dev/v1alpha1:InMemoryChannel,messaging.knative.dev/v1alpha1:Channel,messaging.knative.dev/v1beta1:InMemoryChannel \
-      --kubeconfig "$KUBECONFIG" \
-      --imagetemplate "$TEST_IMAGE_TEMPLATE" \
-      "${options}" || failed=$?
+      "$common_opts" || failed=$?
   else
     go_test_e2e -timeout=90m -parallel=12 ./test/e2e \
       -brokerclass=ChannelBasedBroker \
-      -channels=messaging.knative.dev/v1alpha1:InMemoryChannel,messaging.knative.dev/v1alpha1:Channel,messaging.knative.dev/v1beta1:InMemoryChannel \
-      --kubeconfig "$KUBECONFIG" \
-      --imagetemplate "$TEST_IMAGE_TEMPLATE" \
-      "${options}" || failed=$?
+      "$common_opts" || failed=$?
   fi
 
   header "Running tests with Multi TenantChannel Based Broker"
@@ -198,16 +194,10 @@ function run_e2e_tests(){
     go_test_e2e -timeout=15m -parallel=1 ./test/e2e \
       -run "^(${test_name})$" \
       -brokerclass=MTChannelBasedBroker \
-      -channels=messaging.knative.dev/v1alpha1:InMemoryChannel,messaging.knative.dev/v1alpha1:Channel,messaging.knative.dev/v1beta1:InMemoryChannel \
-      --kubeconfig "$KUBECONFIG" \
-      --imagetemplate "$TEST_IMAGE_TEMPLATE" \
-      "${options}" || failed=$?
+      "$common_opts" || failed=$?
   else
     go_test_e2e -timeout=90m -parallel=12 ./test/e2e \
       -brokerclass=MTChannelBasedBroker \
-      -channels=messaging.knative.dev/v1alpha1:InMemoryChannel,messaging.knative.dev/v1alpha1:Channel,messaging.knative.dev/v1beta1:InMemoryChannel \
-      --kubeconfig "$KUBECONFIG" \
-      --imagetemplate "$TEST_IMAGE_TEMPLATE" \
-      "${options}" || failed=$?
+      "$common_opts" || failed=$?
   fi
 }
