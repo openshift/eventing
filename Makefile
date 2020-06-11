@@ -4,6 +4,10 @@ CGO_ENABLED=0
 GOOS=linux
 CORE_IMAGES=$(shell find ./cmd -name main.go ! -path "./cmd/broker/*" ! -path "./cmd/mtbroker/*" | sed 's/main.go//')
 TEST_IMAGES=$(shell find ./test/test_images -mindepth 1 -maxdepth 1 -type d)
+KO_DOCKER_REPO=${DOCKER_REPO_OVERRIDE}
+BRANCH=
+TEST=
+IMAGE=
 
 # Guess location of openshift/release repo. NOTE: override this if it is not correct.
 OPENSHIFT=${CURDIR}/../../github.com/openshift/release
@@ -23,6 +27,28 @@ test-install:
 test-e2e:
 	sh openshift/e2e-tests-openshift.sh
 .PHONY: test-e2e
+
+# Requires ko 0.2.0 or newer.
+test-images:
+	for img in $(TEST_IMAGES); do \
+		ko resolve --tags=latest -RBf $$img ; \
+	done
+.PHONY: test-images
+
+test-image-single:
+	ko resolve --tags=latest -RBf test/test_images/$(IMAGE)
+.PHONY: test-image-single
+
+# Run make DOCKER_REPO_OVERRIDE=<your_repo> test-e2e-local if test images are available
+# in the given repository. Make sure you first build and push them there by running `make test-images`.
+# Run make BRANCH=<ci_promotion_name> test-e2e-local if test images from the latest CI
+# build for this branch should be used. Example: `make BRANCH=knative-v0.14.2 test-e2e-local`.
+# If neither DOCKER_REPO_OVERRIDE nor BRANCH are defined the tests will use test images
+# from the last nightly build.
+# If TEST is defined then only the single test will be run.
+test-e2e-local:
+	./openshift/e2e-tests-local.sh $(TEST)
+.PHONY: test-e2e-local
 
 # Generate Dockerfiles used by ci-operator. The files need to be committed manually.
 generate-dockerfiles:
