@@ -24,10 +24,6 @@ test-e2e:
 	sh openshift/e2e-tests-openshift.sh
 .PHONY: test-e2e
 
-test-origin-conformance:
-	sh TEST_ORIGIN_CONFORMANCE=true openshift/e2e-tests-openshift.sh
-.PHONY: test-origin-conformance
-
 # Generate Dockerfiles used by ci-operator. The files need to be committed manually.
 generate-dockerfiles:
 	rm -rf openshift/ci-operator/knative-images/*
