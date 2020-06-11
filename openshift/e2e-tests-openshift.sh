@@ -153,27 +153,6 @@ function run_e2e_tests(){
     ${options} || failed=1
 }
 
-function run_origin_e2e() {
-  local param_file=e2e-origin-params.txt
-  (
-    echo "NAMESPACE=$EVENTING_NAMESPACE"
-    echo "IMAGE_TESTS=registry.svc.ci.openshift.org/openshift/origin-v4.0:tests"
-    echo "TEST_COMMAND=TEST_SUITE=openshift/conformance/parallel run-tests"
-  ) > $param_file
-  
-  oc -n $EVENTING_NAMESPACE create configmap kubeconfig --from-file=kubeconfig=$KUBECONFIG
-  oc -n $EVENTING_NAMESPACE new-app -f ./openshift/origin-e2e-job.yaml --param-file=$param_file
-  
-  timeout 240 "oc get pods -n $EVENTING_NAMESPACE | grep e2e-origin-testsuite | grep -E 'Running'"
-  e2e_origin_pod=$(oc get pods -n $EVENTING_NAMESPACE | grep e2e-origin-testsuite | grep -E 'Running' | awk '{print $1}')
-  timeout 3600 "oc -n $EVENTING_NAMESPACE exec $e2e_origin_pod -c e2e-test-origin ls /tmp/artifacts/e2e-origin/test_logs.tar"
-  oc cp ${EVENTING_NAMESPACE}/${e2e_origin_pod}:/tmp/artifacts/e2e-origin/test_logs.tar .
-  tar xvf test_logs.tar -C /tmp/artifacts
-  mkdir -p /tmp/artifacts/junit
-  mv $(find /tmp/artifacts -name "junit_e2e_*.xml") /tmp/artifacts/junit
-  mv /tmp/artifacts/tmp/artifacts/e2e-origin/e2e-origin.log /tmp/artifacts
-}
-
 # Waits until the machineset in the given namespaces scales up to the
 # desired number of replicas
 # Parameters: $1 - namespace
@@ -204,10 +183,6 @@ failed=0
 (( !failed )) && install_serverless || failed=1
 
 (( !failed )) && install_knative_eventing || failed=1
-
-if [[ $TEST_ORIGIN_CONFORMANCE == true ]]; then
-  (( !failed )) && run_origin_e2e || failed=1
-fi
 
 (( !failed )) && run_e2e_tests || failed=1
 
