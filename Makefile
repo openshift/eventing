@@ -25,7 +25,7 @@ test-install:
 .PHONY: test-install
 
 test-e2e:
-	sh openshift/e2e-tests-openshift.sh
+	sh openshift/e2e-tests.sh
 .PHONY: test-e2e
 
 # Requires ko 0.2.0 or newer.
