@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 export EVENTING_NAMESPACE=knative-eventing
+export OLM_NAMESPACE=openshift-marketplace
 
 function scale_up_workers(){
   local cluster_api_ns="openshift-machine-api"
