@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
 
 # shellcheck disable=SC1090
+source "$(dirname "$0")/../test/e2e-common.sh"
 source "$(dirname "$0")/e2e-common.sh"
 
 set -x
+
+export TEST_IMAGE_TEMPLATE="${IMAGE_FORMAT//\$\{component\}/knative-eventing-test-{{.Name}}}"
 
 env
 

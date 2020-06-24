@@ -1,29 +1,6 @@
 #!/usr/bin/env bash
 
-# shellcheck disable=SC1090
-source "$(dirname "$0")/../test/e2e-common.sh"
-source "$(dirname "$0")/release/resolve.sh"
-
-readonly SERVING_NAMESPACE=knative-serving
-readonly SERVICEMESH_NAMESPACE=knative-serving-ingress
-readonly EVENTING_NAMESPACE=knative-eventing
-readonly OLM_NAMESPACE=openshift-marketplace
-
-# Determine if we're running locally or in CI.
-if [ -n "$OPENSHIFT_BUILD_NAMESPACE" ]; then
-  # A golang template to point the tests to the right image coordinates.
-  # {{.Name}} is the name of the image, for example 'logevents'.
-  # IMAGE_FORMAT variable provided by ci-operator.
-  readonly TEST_IMAGE_TEMPLATE="${IMAGE_FORMAT//\$\{component\}/knative-eventing-test-{{.Name}}}"
-elif [ -n "$DOCKER_REPO_OVERRIDE" ]; then
-  readonly TEST_IMAGE_TEMPLATE="${DOCKER_REPO_OVERRIDE}/{{.Name}}"
-elif [ -n "$BRANCH" ]; then
-  readonly TEST_IMAGE_TEMPLATE="registry.svc.ci.openshift.org/openshift/${BRANCH}:knative-eventing-test-{{.Name}}"
-elif [ -n "$TEMPLATE" ]; then
-  readonly TEST_IMAGE_TEMPLATE="$TEMPLATE"
-else
-  readonly TEST_IMAGE_TEMPLATE="registry.svc.ci.openshift.org/openshift/knative-nightly:knative-eventing-test-{{.Name}}"
-fi
+export EVENTING_NAMESPACE=knative-eventing
 
 function scale_up_workers(){
   local cluster_api_ns="openshift-machine-api"
@@ -96,24 +73,39 @@ function install_serverless(){
 }
 
 function run_e2e_tests(){
-
-  header "Running tests with Single Tenant Channel Based Broker"
-  oc apply -f test/config/st-channel-broker.yaml || return 1
-  wait_until_pods_running $EVENTING_NAMESPACE || return 1
-  go_test_e2e -timeout=90m -parallel=12 ./test/e2e -brokerclass=ChannelBasedBroker -channels=messaging.knative.dev/v1alpha1:InMemoryChannel,messaging.knative.dev/v1alpha1:Channel,messaging.knative.dev/v1beta1:InMemoryChannel \
-    --kubeconfig "$KUBECONFIG" \
-    --imagetemplate "$TEST_IMAGE_TEMPLATE" \
-    ${options} || failed=1
-
-  header "Running tests with Multi Tenant Channel Based Broker"
-  local test_name=$1
+  local test_name="${1:-}"
   local failed=0
   local channels=messaging.knative.dev/v1alpha1:InMemoryChannel,messaging.knative.dev/v1alpha1:Channel,messaging.knative.dev/v1beta1:InMemoryChannel
-  local common_opts="-channels=$channels --kubeconfig $KUBECONFIG --imagetemplate $TEST_IMAGE_TEMPLATE $options"
+  local common_opts="-channels=$channels --kubeconfig $KUBECONFIG --imagetemplate $TEST_IMAGE_TEMPLATE"
 
-  oc apply -f config/core/configmaps/default-broker.yaml || return 1
-  oc -n knative-eventing set env deployment/mt-broker-controller BROKER_INJECTION_DEFAULT=true || return 1
-  wait_until_pods_running $EVENTING_NAMESPACE || return 1
+  header "Running tests with Single Tenant Channel Based Broker"
+
+  oc patch KnativeEventing knative-eventing \
+    --namespace $EVENTING_NAMESPACE \
+    --type merge \
+    --patch '{"spec":{"defaultBrokerClass":"ChannelBasedBroker"}}' || return 1
+
+  wait_until_pods_running $EVENTING_NAMESPACE || return 2
+
+  if [ -n "$test_name" ]; then # Running a single test.
+    go_test_e2e -timeout=15m -parallel=1 ./test/e2e \
+      -run "^(${test_name})$" \
+      -brokerclass=ChannelBasedBroker \
+      "$common_opts" || failed=$?
+  else
+    go_test_e2e -timeout=90m -parallel=12 ./test/e2e \
+      -brokerclass=ChannelBasedBroker \
+      "$common_opts" || failed=$?
+  fi
+
+  header "Running tests with Multi Tenant Channel Based Broker"
+
+  oc patch KnativeEventing knative-eventing \
+    --namespace $EVENTING_NAMESPACE \
+    --type merge \
+    --patch '{"spec":{"defaultBrokerClass":"MTChannelBasedBroker"}}' || return 3
+
+  wait_until_pods_running $EVENTING_NAMESPACE || return 4
 
   if [ -n "$test_name" ]; then # Running a single test.
     go_test_e2e -timeout=15m -parallel=1 ./test/e2e \
@@ -125,4 +117,6 @@ function run_e2e_tests(){
       -brokerclass=MTChannelBasedBroker \
       "$common_opts" || failed=$?
   fi
+
+  return $failed
 }

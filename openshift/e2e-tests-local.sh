@@ -1,9 +1,20 @@
 #!/usr/bin/env bash
 
 # shellcheck disable=SC1090
+source "$(dirname "$0")/../test/e2e-common.sh"
 source "$(dirname "$0")/e2e-common.sh"
 
 set -x
+
+if [ -n "$TEMPLATE" ]; then
+  export TEST_IMAGE_TEMPLATE="$TEMPLATE"
+elif [ -n "$DOCKER_REPO_OVERRIDE" ]; then
+  export TEST_IMAGE_TEMPLATE="${DOCKER_REPO_OVERRIDE}/{{.Name}}"
+elif [ -n "$BRANCH" ]; then
+  export TEST_IMAGE_TEMPLATE="registry.svc.ci.openshift.org/openshift/${BRANCH}:knative-eventing-test-{{.Name}}"
+else
+  export TEST_IMAGE_TEMPLATE="registry.svc.ci.openshift.org/openshift/knative-nightly:knative-eventing-test-{{.Name}}"
+fi
 
 env
 
