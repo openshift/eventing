@@ -152,7 +152,7 @@ function run_e2e_tests(){
   local common_opts="-channels=$channels --kubeconfig $KUBECONFIG --imagetemplate $TEST_IMAGE_TEMPLATE"
 
   header "Running tests with Single Tenant Channel Based Broker"
-  oc apply -f test/config/st-channel-broker.yaml || return 1
+  oc patch cm config-br-defaults -n $EVENTING_NAMESPACE -p '{"data":{"default-br-config":"clusterDefault:\n  brokerClass: ChannelBasedBroker\n  apiVersion: v1\n  kind: ConfigMap\n  name: config-br-default-channel\n  namespace: '$EVENTING_NAMESPACE'\n"}}' --type=merge ||  return 1
   wait_until_pods_running $EVENTING_NAMESPACE || return 2
 
   if [ -n "$test_name" ]; then # Running a single test.
@@ -167,7 +167,7 @@ function run_e2e_tests(){
   fi
 
   header "Running tests with Multi Tenant Channel Based Broker"
-  oc apply -f config/core/configmaps/default-broker.yaml || return 3
+  oc patch cm config-br-defaults -n $EVENTING_NAMESPACE -p '{"data":{"default-br-config":"clusterDefault:\n  brokerClass: MTChannelBasedBroker\n  apiVersion: v1\n  kind: ConfigMap\n  name: config-br-default-channel\n  namespace: '$EVENTING_NAMESPACE'\n"}}' --type=merge ||  return 3
   oc -n knative-eventing set env deployment/mt-broker-controller BROKER_INJECTION_DEFAULT=true || return 1
   wait_until_pods_running $EVENTING_NAMESPACE || return 4
 
