@@ -1,29 +1,6 @@
 #!/usr/bin/env bash
 
-# shellcheck disable=SC1090
-source "$(dirname "$0")/../test/e2e-common.sh"
-source "$(dirname "$0")/release/resolve.sh"
-
-readonly SERVING_NAMESPACE=knative-serving
-readonly SERVICEMESH_NAMESPACE=knative-serving-ingress
-readonly EVENTING_NAMESPACE=knative-eventing
-readonly OLM_NAMESPACE=openshift-marketplace
-
-# Determine if we're running locally or in CI.
-if [ -n "$OPENSHIFT_BUILD_NAMESPACE" ]; then
-  # A golang template to point the tests to the right image coordinates.
-  # {{.Name}} is the name of the image, for example 'logevents'.
-  # IMAGE_FORMAT variable provided by ci-operator.
-  readonly TEST_IMAGE_TEMPLATE="${IMAGE_FORMAT//\$\{component\}/knative-eventing-test-{{.Name}}}"
-elif [ -n "$DOCKER_REPO_OVERRIDE" ]; then
-  readonly TEST_IMAGE_TEMPLATE="${DOCKER_REPO_OVERRIDE}/{{.Name}}"
-elif [ -n "$BRANCH" ]; then
-  readonly TEST_IMAGE_TEMPLATE="registry.svc.ci.openshift.org/openshift/${BRANCH}:knative-eventing-test-{{.Name}}"
-elif [ -n "$TEMPLATE" ]; then
-  readonly TEST_IMAGE_TEMPLATE="$TEMPLATE"
-else
-  readonly TEST_IMAGE_TEMPLATE="registry.svc.ci.openshift.org/openshift/knative-nightly:knative-eventing-test-{{.Name}}"
-fi
+export EVENTING_NAMESPACE=knative-eventing
 
 function scale_up_workers(){
   local cluster_api_ns="openshift-machine-api"
@@ -171,13 +148,13 @@ function install_knative_eventing(){
 function run_e2e_tests(){
   header "Running tests with Multi Tenant Channel Based Broker"
 
-  local test_name=$1
+  local test_name="${1:-}"
   local failed=0
   local channels=messaging.knative.dev/v1beta1:Channel,messaging.knative.dev/v1beta1:InMemoryChannel
-  local common_opts="-channels=$channels --kubeconfig $KUBECONFIG --imagetemplate $TEST_IMAGE_TEMPLATE $options"
+  local common_opts="-channels=$channels --kubeconfig $KUBECONFIG --imagetemplate $TEST_IMAGE_TEMPLATE"
 
   oc -n knative-eventing set env deployment/mt-broker-controller BROKER_INJECTION_DEFAULT=true || return 1
-  wait_until_pods_running $EVENTING_NAMESPACE || return 1
+  wait_until_pods_running $EVENTING_NAMESPACE || return 2
 
   if [ -n "$test_name" ]; then # Running a single test.
     go_test_e2e -timeout=15m -parallel=1 ./test/e2e \
