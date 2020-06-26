@@ -4,7 +4,7 @@ branch=${1-'knative-v0.6.0'}
 openshift=${2-'4.3'}
 promotion_disabled=${3-false}
 
-if [[ "$branch" -eq "knative-next" ]]; then
+if [[ "$branch" == "knative-next" ]]; then
     branch="knative-nightly"
 fi
 
