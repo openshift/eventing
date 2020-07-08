@@ -50,7 +50,20 @@ function install_strimzi(){
 function install_serverless(){
   header "Installing Serverless Operator"
   git clone --branch release-1.7 https://github.com/openshift-knative/serverless-operator.git /tmp/serverless-operator
-  cp openshift/olm/serverless-operator.v1.7.0.clusterserviceversion.yaml /tmp/serverless-operator/olm-catalog/serverless-operator/1.7.0/serverless-operator.v1.7.0.clusterserviceversion.yaml
+  CATALOG_SOURCE="openshift/olm/serverless-operator.v1.7.0.clusterserviceversion.yaml"
+
+  sed -i -e "s|registry.svc.ci.openshift.org/openshift/knative-.*:knative-eventing-controller|${IMAGE_FORMAT//\$\{component\}/knative-eventing-controller}|g" ${CATALOG_SOURCE}
+  sed -i -e "s|registry.svc.ci.openshift.org/openshift/knative-.*:knative-eventing-webhook|${IMAGE_FORMAT//\$\{component\}/knative-eventing-webhook}|g" ${CATALOG_SOURCE}
+  sed -i -e "s|registry.svc.ci.openshift.org/openshift/knative-.*:knative-eventing-channel-broker|${IMAGE_FORMAT//\$\{component\}/knative-eventing-channel-broker}|g" ${CATALOG_SOURCE}
+  sed -i -e "s|registry.svc.ci.openshift.org/openshift/knative-.*:knative-eventing-channel-controller|${IMAGE_FORMAT//\$\{component\}/knative-eventing-channel-controller}|g" ${CATALOG_SOURCE}
+  sed -i -e "s|registry.svc.ci.openshift.org/openshift/knative-.*:knative-eventing-dispatcher|${IMAGE_FORMAT//\$\{component\}/knative-eventing-dispatcher}|g" ${CATALOG_SOURCE}
+  sed -i -e "s|registry.svc.ci.openshift.org/openshift/knative-.*:knative-eventing-cronjob-receive-adapter|${IMAGE_FORMAT//\$\{component\}/knative-eventing-cronjob-receive-adapter}|g" ${CATALOG_SOURCE}
+  sed -i -e "s|registry.svc.ci.openshift.org/openshift/knative-.*:knative-eventing-ping|${IMAGE_FORMAT//\$\{component\}/knative-eventing-ping}|g" ${CATALOG_SOURCE}
+  sed -i -e "s|registry.svc.ci.openshift.org/openshift/knative-.*:knative-eventing-apiserver-receive-adapter|${IMAGE_FORMAT//\$\{component\}/knative-eventing-apiserver-receive-adapter}|g" ${CATALOG_SOURCE}
+  sed -i -e "s|registry.svc.ci.openshift.org/openshift/knative-.*:knative-eventing-ingress|${IMAGE_FORMAT//\$\{component\}/knative-eventing-ingress}|g" ${CATALOG_SOURCE}
+  sed -i -e "s|registry.svc.ci.openshift.org/openshift/knative-.*:knative-eventing-filter|${IMAGE_FORMAT//\$\{component\}/knative-eventing-filter}|g" ${CATALOG_SOURCE}
+  sed -i -e "s|registry.svc.ci.openshift.org/openshift/knative-.*:knative-eventing-channel-dispatcher|${IMAGE_FORMAT//\$\{component\}/knative-eventing-channel-dispatcher}|g" ${CATALOG_SOURCE}
+  cp $CATALOG_SOURCE /tmp/serverless-operator/olm-catalog/serverless-operator/1.7.0/serverless-operator.v1.7.0.clusterserviceversion.yaml
   # unset OPENSHIFT_BUILD_NAMESPACE as its used in serverless-operator's CI environment as a switch
   # to use CI built images, we want pre-built images of k-s-o and k-o-i
   unset OPENSHIFT_BUILD_NAMESPACE
