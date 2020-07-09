@@ -63,7 +63,7 @@ function install_serverless(){
   sed -i -e "s|registry.svc.ci.openshift.org/openshift/knative-.*:knative-eventing-ingress|${IMAGE_FORMAT//\$\{component\}/knative-eventing-ingress}|g" ${CATALOG_SOURCE}
   sed -i -e "s|registry.svc.ci.openshift.org/openshift/knative-.*:knative-eventing-filter|${IMAGE_FORMAT//\$\{component\}/knative-eventing-filter}|g" ${CATALOG_SOURCE}
   sed -i -e "s|registry.svc.ci.openshift.org/openshift/knative-.*:knative-eventing-channel-dispatcher|${IMAGE_FORMAT//\$\{component\}/knative-eventing-channel-dispatcher}|g" ${CATALOG_SOURCE}
-  cp $CATALOG_SOURCE /tmp/serverless-operator/olm-catalog/serverless-operator/1.7.0/serverless-operator.v1.7.0.clusterserviceversion.yaml
+  cp $CATALOG_SOURCE /tmp/serverless-operator/olm-catalog/serverless-operator/1.7.1/serverless-operator.v1.7.1.clusterserviceversion.yaml
   # unset OPENSHIFT_BUILD_NAMESPACE as its used in serverless-operator's CI environment as a switch
   # to use CI built images, we want pre-built images of k-s-o and k-o-i
   unset OPENSHIFT_BUILD_NAMESPACE
