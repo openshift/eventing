@@ -10,7 +10,7 @@ if [ "$release" == "ci" ]; then
     image_prefix="registry.svc.ci.openshift.org/openshift/knative-nightly:knative-eventing-"
     tag=""
 else
-    image_prefix="registry.svc.ci.openshift.org/openshift/knative-${release}:knative-eventing-"
+    image_prefix="registry.svc.ci.openshift.org/openshift/knative-v${release}:knative-eventing-"
     tag=""
 fi
 
