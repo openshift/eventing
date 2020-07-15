@@ -150,23 +150,21 @@ function run_e2e_tests(){
   header "Running tests with Multi Tenant Channel Based Broker"
 
   local test_name="${1:-}"
+  local run_command=""
   local failed=0
   local channels=messaging.knative.dev/v1beta1:Channel,messaging.knative.dev/v1beta1:InMemoryChannel
   local common_opts="-channels=$channels --kubeconfig $KUBECONFIG --imagetemplate $TEST_IMAGE_TEMPLATE"
+  if [ -n "$test_name" ]; then
+      local run_command="-run ^(${test_name})$"
+  fi
 
   oc -n knative-eventing set env deployment/mt-broker-controller BROKER_INJECTION_DEFAULT=true || return 1
   wait_until_pods_running $EVENTING_NAMESPACE || return 2
 
-  if [ -n "$test_name" ]; then # Running a single test.
-    go_test_e2e -timeout=15m -parallel=1 ./test/e2e \
-      -run "^(${test_name})$" \
-      -brokerclass=MTChannelBasedBroker \
-      "$common_opts" || failed=$?
-  else
-    go_test_e2e -timeout=90m -parallel=12 ./test/e2e \
-      -brokerclass=MTChannelBasedBroker \
-      "$common_opts" || failed=$?
-  fi
+  go_test_e2e -timeout=90m -parallel=12 ./test/e2e \
+    "$run_command" \
+    -brokerclass=MTChannelBasedBroker \
+    "$common_opts" || failed=$?
 
   return $failed
 }
