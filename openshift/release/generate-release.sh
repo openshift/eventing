@@ -5,7 +5,6 @@ source $(dirname $0)/resolve.sh
 release=$1
 
 output_file="openshift/release/knative-eventing-ci.yaml"
-rm $output_file
 
 if [ "$release" == "ci" ]; then
     image_prefix="registry.svc.ci.openshift.org/openshift/knative-nightly:knative-eventing-"
