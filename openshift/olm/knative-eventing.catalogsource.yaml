@@ -693,6 +693,38 @@ data:
                             fieldPath: metadata.name
                       - name: OPERATOR_NAME
                         value: knative-eventing-operator
+                      - name: IMAGE_controller
+                        value: registry.svc.ci.openshift.org/openshift/knative-v0.16.0:knative-eventing-controller
+                      - name: IMAGE_PING_IMAGE
+                        value: registry.svc.ci.openshift.org/openshift/knative-v0.16.0:knative-eventing-ping
+                      - name: IMAGE_MT_PING_IMAGE
+                        value: registry.svc.ci.openshift.org/openshift/knative-v0.16.0:knative-eventing-mtping
+                      - name: IMAGE_APISERVER_RA_IMAGE
+                        value: registry.svc.ci.openshift.org/openshift/knative-v0.16.0:knative-eventing-apiserver-receive-adapter
+                      - name: IMAGE_webhook
+                        value: registry.svc.ci.openshift.org/openshift/knative-v0.16.0:knative-eventing-webhook
+                      - name: IMAGE_imc-controller
+                        value: registry.svc.ci.openshift.org/openshift/knative-v0.16.0:knative-eventing-channel-controller
+                      - name: IMAGE_DISPATHCER_IMAGE
+                        value: registry.svc.ci.openshift.org/openshift/knative-v0.16.0:knative-eventing-channel-dispatcher
+                      - name: IMAGE_imc-dispatcher
+                        value: registry.svc.ci.openshift.org/openshift/knative-v0.16.0:knative-eventing-channel-dispatcher
+                      - name: IMAGE_broker-controller
+                        value: registry.svc.ci.openshift.org/openshift/knative-v0.16.0:knative-eventing-channel-broker
+                      - name: IMAGE_BROKER_INGRESS_IMAGE
+                        value: registry.svc.ci.openshift.org/openshift/knative-v0.16.0:knative-eventing-broker-ingress
+                      - name: IMAGE_BROKER_FILTER_IMAGE
+                        value: registry.svc.ci.openshift.org/openshift/knative-v0.16.0:knative-eventing-broker-filter
+                      - name: IMAGE_broker-filter
+                        value: registry.svc.ci.openshift.org/openshift/knative-v0.16.0:knative-eventing-mtbroker-filter
+                      - name: IMAGE_mt-broker-filter
+                        value: registry.svc.ci.openshift.org/openshift/knative-v0.16.0:knative-eventing-mtbroker-filter
+                      - name: IMAGE_broker-ingress
+                        value: registry.svc.ci.openshift.org/openshift/knative-v0.16.0:knative-eventing-mtbroker-ingress
+                      - name: IMAGE_mt-broker-ingress
+                        value: registry.svc.ci.openshift.org/openshift/knative-v0.16.0:knative-eventing-mtbroker-ingress
+                      - name: IMAGE_mt_broker-controller
+                        value: registry.svc.ci.openshift.org/openshift/knative-v0.16.0:knative-eventing-mtchannel-broker
                       image: quay.io/openshift-knative/knative-eventing-operator:v0.13.0
                       args:
                         - --filename=https://raw.githubusercontent.com/openshift/knative-eventing/release-v0.16.0/openshift/release/knative-eventing-ci.yaml,https://raw.githubusercontent.com/openshift/knative-eventing/release-v0.16.0/openshift/release/knative-eventing-channelbroker-ci.yaml,https://raw.githubusercontent.com/openshift/knative-eventing/release-v0.16.0/openshift/release/knative-eventing-mtbroker-ci.yaml
