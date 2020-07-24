@@ -163,9 +163,9 @@ function install_knative_eventing(){
   sed -i -e "s|registry.svc.ci.openshift.org/openshift/knative-.*:knative-eventing-channel-broker|${IMAGE_FORMAT//\$\{component\}/knative-eventing-channel-broker}|g"                       ci
   sed -i -e "s|registry.svc.ci.openshift.org/openshift/knative-.*:knative-eventing-broker-ingress|${IMAGE_FORMAT//\$\{component\}/knative-eventing-broker-ingress}|g"                       ci
   sed -i -e "s|registry.svc.ci.openshift.org/openshift/knative-.*:knative-eventing-broker-filter|${IMAGE_FORMAT//\$\{component\}/knative-eventing-broker-filter}|g"                         ci
-  sed -i -e "s|registry.svc.ci.openshift.org/openshift/knative-.*:knative-eventing-mtbroker-ingress|${IMAGE_FORMAT//\$\{component\}/knative-eventing-broker-ingress}|g"                     ci
-  sed -i -e "s|registry.svc.ci.openshift.org/openshift/knative-.*:knative-eventing-mtbroker-filter|${IMAGE_FORMAT//\$\{component\}/knative-eventing-broker-filter}|g"                       ci
-  sed -i -e "s|registry.svc.ci.openshift.org/openshift/knative-.*:knative-eventing-mtchannel-broker|${IMAGE_FORMAT//\$\{component\}/knative-eventing-channel-broker}|g"                     ci
+  sed -i -e "s|registry.svc.ci.openshift.org/openshift/knative-.*:knative-eventing-mtbroker-ingress|${IMAGE_FORMAT//\$\{component\}/knative-eventing-mtbroker-ingress}|g"                   ci
+  sed -i -e "s|registry.svc.ci.openshift.org/openshift/knative-.*:knative-eventing-mtbroker-filter|${IMAGE_FORMAT//\$\{component\}/knative-eventing-mtbroker-filter}|g"                     ci
+  sed -i -e "s|registry.svc.ci.openshift.org/openshift/knative-.*:knative-eventing-mtchannel-broker|${IMAGE_FORMAT//\$\{component\}/knative-eventing-mtchannel-broker}|g"                   ci
 
   oc apply -f ci
   rm ci
