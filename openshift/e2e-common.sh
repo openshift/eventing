@@ -149,9 +149,9 @@ function install_knative_eventing(){
 
   create_knative_namespace eventing
 
-  cat release/knative-eventing-ci.yaml > ci
-  cat release/knative-eventing-channelbroker-ci.yaml >> ci
-  cat release/knative-eventing-mtbroker-ci.yaml >> ci
+  cat openshift/release/knative-eventing-ci.yaml > ci
+  cat openshift/release/knative-eventing-channelbroker-ci.yaml >> ci
+  cat openshift/release/knative-eventing-mtbroker-ci.yaml >> ci
 
   sed -i -e "s|registry.svc.ci.openshift.org/openshift/knative-.*:knative-eventing-controller|${IMAGE_FORMAT//\$\{component\}/knative-eventing-controller}|g"                               ci
   sed -i -e "s|registry.svc.ci.openshift.org/openshift/knative-.*:knative-eventing-ping|${IMAGE_FORMAT//\$\{component\}/knative-eventing-ping}|g"                                           ci
