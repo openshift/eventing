@@ -169,13 +169,13 @@ function install_knative_eventing(){
 
   oc apply -f ci
   rm ci
-  timeout_non_zero 900 '[[ $(oc get pods -n $OLM_NAMESPACE | grep -c knative-eventing) -eq 0 ]]' || return 1
-  wait_until_pods_running $OLM_NAMESPACE
+  #timeout_non_zero 900 '[[ $(oc get pods -n $OLM_NAMESPACE | grep -c knative-eventing) -eq 0 ]]' || return 1
+  #wait_until_pods_running $OLM_NAMESPACE
 
-  oc get pod -n $OLM_NAMESPACE -o yaml
+  #oc get pod -n $OLM_NAMESPACE -o yaml
 
   # Deploy Knative Operators Eventing
-  deploy_knative_operator eventing KnativeEventing
+  #deploy_knative_operator eventing KnativeEventing
 
   # Wait for 5 pods to appear first
   timeout_non_zero 900 '[[ $(oc get pods -n $EVENTING_NAMESPACE --no-headers | wc -l) -lt 5 ]]' || return 1
