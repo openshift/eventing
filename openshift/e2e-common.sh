@@ -149,9 +149,9 @@ function install_knative_eventing(){
 
   create_knative_namespace eventing
 
-  curl -L "https://raw.githubusercontent.com/openshift/knative-eventing/release-v0.16.0/openshift/release/knative-eventing-ci.yaml"               > ci
-  curl -L "https://raw.githubusercontent.com/openshift/knative-eventing/release-v0.16.0/openshift/release/knative-eventing-channelbroker-ci.yaml" >> ci
-  curl -L "https://raw.githubusercontent.com/openshift/knative-eventing/release-v0.16.0/openshift/release/knative-eventing-mtbroker-ci.yaml"      >> ci
+  cat release/knative-eventing-ci.yaml > ci
+  cat release/knative-eventing-channelbroker-ci.yaml >> ci
+  cat release/knative-eventing-mtbroker-ci.yaml >> ci
 
   sed -i -e "s|registry.svc.ci.openshift.org/openshift/knative-.*:knative-eventing-controller|${IMAGE_FORMAT//\$\{component\}/knative-eventing-controller}|g"                               ci
   sed -i -e "s|registry.svc.ci.openshift.org/openshift/knative-.*:knative-eventing-ping|${IMAGE_FORMAT//\$\{component\}/knative-eventing-ping}|g"                                           ci
