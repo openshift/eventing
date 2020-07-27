@@ -105,45 +105,6 @@ function create_knative_namespace(){
 	EOF
 }
 
-function deploy_knative_operator(){
-  local COMPONENT="knative-$1"
-  local API_GROUP=$1
-  local KIND=$2
-
-  cat <<-EOF | oc apply -f -
-	apiVersion: v1
-	kind: Namespace
-	metadata:
-	  name: ${COMPONENT}
-	EOF
-  if oc get crd operatorgroups.operators.coreos.com >/dev/null 2>&1; then
-    cat <<-EOF | oc apply -f -
-	apiVersion: operators.coreos.com/v1
-	kind: OperatorGroup
-	metadata:
-	  name: ${COMPONENT}
-	  namespace: ${COMPONENT}
-	EOF
-  fi
-  cat <<-EOF | oc apply -f -
-	apiVersion: operators.coreos.com/v1alpha1
-	kind: Subscription
-	metadata:
-	  name: ${COMPONENT}-subscription
-	  generateName: ${COMPONENT}-
-	  namespace: ${COMPONENT}
-	spec:
-	  source: ${COMPONENT}-operator
-	  sourceNamespace: $OLM_NAMESPACE
-	  name: ${COMPONENT}-operator
-	  channel: alpha
-	EOF
-
-  # # Wait until the server knows about the Install CRD before creating
-  # # an instance of it below
-  timeout_non_zero 60 '[[ $(oc get crd knative${API_GROUP}s.${API_GROUP}.knative.dev -o jsonpath="{.status.acceptedNames.kind}" | grep -c $KIND) -eq 0 ]]' || return 1
-}
-
 function install_knative_eventing(){
   header "Installing Knative Eventing"
 
@@ -170,13 +131,6 @@ function install_knative_eventing(){
 
   oc apply -f ci
   rm ci
-  #timeout_non_zero 900 '[[ $(oc get pods -n $OLM_NAMESPACE | grep -c knative-eventing) -eq 0 ]]' || return 1
-  #wait_until_pods_running $OLM_NAMESPACE
-
-  #oc get pod -n $OLM_NAMESPACE -o yaml
-
-  # Deploy Knative Operators Eventing
-  #deploy_knative_operator eventing KnativeEventing
 
   # Wait for 5 pods to appear first
   timeout_non_zero 900 '[[ $(oc get pods -n $EVENTING_NAMESPACE --no-headers | wc -l) -lt 5 ]]' || return 1
