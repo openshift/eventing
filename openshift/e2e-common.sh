@@ -72,6 +72,79 @@ function install_serverless(){
   header "Serverless Operator installed successfully"
 }
 
+function install_zipkin(){
+
+
+  header "Setting Zipkin"
+  oc create namespace zipkin
+
+oc apply -n zipkin -f - << EOF
+apiVersion: v1
+kind: Service
+metadata:
+  name: zipkin
+spec:
+  type: NodePort
+  ports:
+  - name: http
+    port: 9411
+  selector:
+    app: zipkin
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zipkin
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: zipkin
+  template:
+    metadata:
+      labels:
+        app: zipkin
+      annotations:
+        sidecar.istio.io/inject: "false"
+    spec:
+      containers:
+      - name: zipkin
+        image: docker.io/openzipkin/zipkin:latest
+        ports:
+        - containerPort: 9411
+        env:
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        resources:
+          limits:
+            memory: 1000Mi
+          requests:
+            memory: 256Mi
+---
+EOF
+
+  sleep 5; while echo && kubectl get pods -n zipkin | grep -v -E "(Running|Completed|STATUS)"; do sleep 5; done
+
+  header "Configuring Zipkin for eventing"
+
+  oc apply -f - << EOF
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config-tracing
+  namespace: knative-eventing
+data:
+  enable: "true"
+  zipkin-endpoint: "http://zipkin.zipkin.svc.cluster.local:9411/api/v2/spans"
+  sample-rate: "1.0"
+  debug: "true"
+EOF
+
+}
+
 function run_e2e_tests(){
   local test_name="${1:-}"
   local failed=0
@@ -88,12 +161,12 @@ function run_e2e_tests(){
   wait_until_pods_running $EVENTING_NAMESPACE || return 2
 
   if [ -n "$test_name" ]; then # Running a single test.
-    go_test_e2e -timeout=15m -parallel=1 ./test/e2e \
+    go_test_e2e -timeout=15m -parallel=1 ./test/e2e ./test/conformance \
       -run "^(${test_name})$" \
       -brokerclass=ChannelBasedBroker \
       "$common_opts" || failed=$?
   else
-    go_test_e2e -timeout=90m -parallel=12 ./test/e2e \
+    go_test_e2e -timeout=90m -parallel=12 ./test/e2e ./test/conformance \
       -brokerclass=ChannelBasedBroker \
       "$common_opts" || failed=$?
   fi
@@ -108,12 +181,12 @@ function run_e2e_tests(){
   wait_until_pods_running $EVENTING_NAMESPACE || return 4
 
   if [ -n "$test_name" ]; then # Running a single test.
-    go_test_e2e -timeout=15m -parallel=1 ./test/e2e \
+    go_test_e2e -timeout=15m -parallel=1 ./test/e2e ./test/conformance \
       -run "^(${test_name})$" \
       -brokerclass=MTChannelBasedBroker \
       "$common_opts" || failed=$?
   else
-    go_test_e2e -timeout=90m -parallel=12 ./test/e2e \
+    go_test_e2e -timeout=90m -parallel=12 ./test/e2e ./test/conformance \
       -brokerclass=MTChannelBasedBroker \
       "$common_opts" || failed=$?
   fi
