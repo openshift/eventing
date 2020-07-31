@@ -158,6 +158,79 @@ function install_knative_eventing(){
   #oc get pod -n knative-eventing -o yaml | grep image: | grep -v knative-eventing-operator | grep -v ${INTERNAL_REGISTRY} && return 1 || true
 }
 
+function install_zipkin(){
+
+
+  header "Setting Zipkin"
+  oc create namespace zipkin
+
+oc apply -n zipkin -f - << EOF
+apiVersion: v1
+kind: Service
+metadata:
+  name: zipkin
+spec:
+  type: NodePort
+  ports:
+  - name: http
+    port: 9411
+  selector:
+    app: zipkin
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zipkin
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: zipkin
+  template:
+    metadata:
+      labels:
+        app: zipkin
+      annotations:
+        sidecar.istio.io/inject: "false"
+    spec:
+      containers:
+      - name: zipkin
+        image: docker.io/openzipkin/zipkin:latest
+        ports:
+        - containerPort: 9411
+        env:
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        resources:
+          limits:
+            memory: 1000Mi
+          requests:
+            memory: 256Mi
+---
+EOF
+
+  sleep 5; while echo && kubectl get pods -n zipkin | grep -v -E "(Running|Completed|STATUS)"; do sleep 5; done
+
+  header "Configuring Zipkin for eventing"
+
+  oc apply -f - << EOF
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config-tracing
+  namespace: knative-eventing
+data:
+  enable: "true"
+  zipkin-endpoint: "http://zipkin.zipkin.svc.cluster.local:9411/api/v2/spans"
+  sample-rate: "1.0"
+  debug: "true"
+EOF
+
+}
+
 function run_e2e_tests(){
   header "Running tests with Multi Tenant Channel Based Broker"
   k get ns ${TEST_EVENTING_NAMESPACE} 2>/dev/null || TEST_EVENTING_NAMESPACE="knative-eventing"
