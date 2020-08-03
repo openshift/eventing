@@ -36,8 +36,6 @@ import (
 )
 
 func TestFlowsSequence(t *testing.T) {
-	// Skip test. Has been added manually not via patch, so please analyse this test and remove that line when fixed.
-	t.Skip("SRVKE-472: Skipping broken test for now. Considered to be not harmful for OpenShift Serverless 1.7.2, but needs to be fixed.")
 	const (
 		sequenceName  = "e2e-sequence"
 		senderPodName = "e2e-sequence-sender-pod"
