@@ -6,6 +6,9 @@ source "$(dirname "$0")/release/resolve.sh"
 set -x
 
 readonly EVENTING_NAMESPACE=knative-eventing
+# A golang template to point the tests to the right image coordinates.
+# {{.Name}} is the name of the image, for example 'autoscale'.
+readonly TEST_IMAGE_TEMPLATE="registry.svc.ci.openshift.org/${OPENSHIFT_BUILD_NAMESPACE}/stable:knative-eventing-test-{{.Name}}"
 
 env
 
@@ -62,9 +65,9 @@ function run_e2e_tests(){
   header "Running tests"
   report_go_test \
     -v -tags=e2e -count=1 -timeout=70m -parallel=12 \
-    ./test/e2e \
+    ./test/e2e -channels=messaging.knative.dev/v1alpha1:InMemoryChannel,messaging.knative.dev/v1alpha1:Channel,messaging.knative.dev/v1beta1:InMemoryChannel \
     --kubeconfig "$KUBECONFIG" \
-    --dockerrepo "quay.io/openshift-knative" \
+    --imagetemplate "$TEST_IMAGE_TEMPLATE" \
     ${options} || failed=1
 }
 
