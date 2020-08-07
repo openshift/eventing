@@ -181,7 +181,7 @@ function run_e2e_tests(){
   go_test_e2e -timeout=90m -parallel=12 ./test/e2e \
     "$run_command" \
     -brokerclass=MTChannelBasedBroker \
-    "$common_opts" || failed=$?
+    $common_opts || failed=$?
 
   return $failed
 }
