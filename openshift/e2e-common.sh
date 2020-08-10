@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+readonly SERVING_NAMESPACE=knative-serving
+readonly SERVING_INGRESS_NAMESPACE=knative-serving-ingress
 export EVENTING_NAMESPACE=knative-eventing
 export OLM_NAMESPACE=openshift-marketplace
 
@@ -37,6 +39,35 @@ function wait_until_machineset_scales_up() {
   return 1
 }
 
+# Waits until the given hostname resolves via DNS
+# Parameters: $1 - hostname
+function wait_until_hostname_resolves() {
+  echo -n "Waiting until hostname $1 resolves via DNS"
+  for _ in {1..150}; do  # timeout after 15 minutes
+    local output
+    output=$(host -t a "$1" | grep 'has address')
+    if [[ -n "${output}" ]]; then
+      echo -e "\n${output}"
+      return 0
+    fi
+    echo -n "."
+    sleep 6
+  done
+  echo -e "\n\nERROR: timeout waiting for hostname $1 to resolve via DNS"
+  return 1
+}
+
+# Loops until duration (car) is exceeded or command (cdr) returns non-zero
+function timeout() {
+  SECONDS=0; TIMEOUT=$1; shift
+  while eval $*; do
+    sleep 5
+    [[ $SECONDS -gt $TIMEOUT ]] && echo "ERROR: Timed out" && return 1
+  done
+  return 0
+}
+
+
 # Loops until duration (car) is exceeded or command (cdr) returns non-zero
 function timeout_non_zero() {
   SECONDS=0; TIMEOUT=$1; shift
@@ -62,15 +93,93 @@ function install_strimzi(){
   sleep 5; while echo && kubectl get pods -n kafka | grep -v -E "(Running|Completed|STATUS)"; do sleep 5; done
 }
 
+
 function install_serverless(){
-  header "Installing Serverless Operator"
-  git clone --branch release-1.6 https://github.com/openshift-knative/serverless-operator.git /tmp/serverless-operator
-  # unset OPENSHIFT_BUILD_NAMESPACE as its used in serverless-operator's CI environment as a switch
-  # to use CI built images, we want pre-built images of k-s-o and k-o-i
-  unset OPENSHIFT_BUILD_NAMESPACE
-  /tmp/serverless-operator/hack/install.sh || return 1
-  header "Serverless Operator installed successfully"
+  header "Installing Knative Serving"
+
+  oc new-project $SERVING_NAMESPACE
+
+  CATALOG_SOURCE="openshift/olm/knative-serving.catalogsource.yaml"
+
+  # release-next branch keeps updating the latest manifest in knative-serving-ci.yaml for serving resources.
+  # see: https://github.com/openshift/knative-serving/blob/release-next/openshift/release/knative-serving-ci.yaml
+  # So mount the manifest and use it by KO_DATA_PATH env value.
+  patch -u ${CATALOG_SOURCE} < openshift/olm/config_map.patch
+
+  oc apply -n $OLM_NAMESPACE -f ${CATALOG_SOURCE}
+  timeout 900 '[[ $(oc get pods -n $OLM_NAMESPACE | grep -c serverless) -eq 0 ]]' || return 1
+  wait_until_pods_running $OLM_NAMESPACE
+
+  # Deploy Serverless Operator
+  deploy_serverless_operator
+
+  # Wait for the CRD to appear
+  timeout 900 '[[ $(oc get crd | grep -c knativeservings) -eq 0 ]]' || return 1
+
+  # Install Knative Serving with initial values in test/config/config-observability.yaml.
+  cat <<-EOF | oc apply -f -
+apiVersion: operator.knative.dev/v1alpha1
+kind: KnativeServing
+metadata:
+  name: knative-serving
+  namespace: ${SERVING_NAMESPACE}
+spec:
+  config:
+    observability:
+      logging.request-log-template: '{"httpRequest": {"requestMethod": "{{.Request.Method}}",
+        "requestUrl": "{{js .Request.RequestURI}}", "requestSize": "{{.Request.ContentLength}}",
+        "status": {{.Response.Code}}, "responseSize": "{{.Response.Size}}", "userAgent":
+        "{{js .Request.UserAgent}}", "remoteIp": "{{js .Request.RemoteAddr}}", "serverIp":
+        "{{.Revision.PodIP}}", "referer": "{{js .Request.Referer}}", "latency": "{{.Response.Latency}}s",
+        "protocol": "{{.Request.Proto}}"}, "traceId": "{{index .Request.Header "X-B3-Traceid"}}"}'
+      logging.enable-probe-request-log: "true"
+EOF
+
+  # Wait for 4 pods to appear first
+  timeout 900 '[[ $(oc get pods -n $SERVING_NAMESPACE --no-headers | wc -l) -lt 4 ]]' || return 1
+  wait_until_pods_running $SERVING_NAMESPACE || return 1
+
+  wait_until_service_has_external_ip $SERVING_INGRESS_NAMESPACE kourier || fail_test "Ingress has no external IP"
+  wait_until_hostname_resolves "$(kubectl get svc -n $SERVING_INGRESS_NAMESPACE kourier -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')"
+
+  header "Knative Installed successfully"
 }
+
+function deploy_serverless_operator(){
+  local name="serverless-operator"
+  local operator_ns
+  operator_ns=$(kubectl get og --all-namespaces | grep global-operators | awk '{print $1}')
+
+  # Create configmap to use the latest manifest.
+  oc create configmap ko-data -n $operator_ns --from-file="openshift/release/knative-serving-ci.yaml"
+
+  # Create configmap to use the latest kourier.
+  oc create configmap kourier-cm -n $operator_ns --from-file="third_party/kourier-latest/kourier.yaml"
+
+  cat <<-EOF | oc apply -f -
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: ${name}-subscription
+  namespace: ${operator_ns}
+spec:
+  source: ${name}
+  sourceNamespace: $OLM_NAMESPACE
+  name: ${name}
+  channel: "preview-4.6"
+EOF
+}
+
+
+# function install_serverless(){
+#   header "Installing Serverless Operator"
+#   git clone --branch release-1.6 https://github.com/openshift-knative/serverless-operator.git /tmp/serverless-operator
+#   # unset OPENSHIFT_BUILD_NAMESPACE as its used in serverless-operator's CI environment as a switch
+#   # to use CI built images, we want pre-built images of k-s-o and k-o-i
+#   unset OPENSHIFT_BUILD_NAMESPACE
+#   /tmp/serverless-operator/hack/install.sh || return 1
+#   header "Serverless Operator installed successfully"
+# }
 
 function create_knative_namespace(){
   local COMPONENT="knative-$1"
