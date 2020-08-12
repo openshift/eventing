@@ -29,6 +29,4 @@ rm crd-channel-resolved.yaml
 
 # the MT Broker:
 output_file="openshift/release/knative-eventing-mtbroker-ci.yaml"
-resolve_resources config/brokers/mt-channel-broker/ mtbroker-resolved.yaml $image_prefix $tag
-cat mtbroker-resolved.yaml >> $output_file
-rm mtbroker-resolved.yaml
+resolve_resources config/brokers/mt-channel-broker/ $output_file $image_prefix $tag
