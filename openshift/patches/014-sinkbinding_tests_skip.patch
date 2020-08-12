@@ -1,29 +1,3 @@
-diff --git a/config/core/deployments/webhook.yaml b/config/core/deployments/webhook.yaml
-index eebad41b7..84afe81a6 100644
---- a/config/core/deployments/webhook.yaml
-+++ b/config/core/deployments/webhook.yaml
-@@ -81,7 +81,7 @@ spec:
-           # will NOT be considered by the sinkbinding webhook.
-           # The default is `exclusion`.
-         - name: SINK_BINDING_SELECTION_MODE
--          value: "exclusion"
-+          value: "inclusion"
- 
-         securityContext:
-           allowPrivilegeEscalation: false
-diff --git a/config/core/webhooks/sinkbindings.yaml b/config/core/webhooks/sinkbindings.yaml
-index a759e9723..badb48ff0 100644
---- a/config/core/webhooks/sinkbindings.yaml
-+++ b/config/core/webhooks/sinkbindings.yaml
-@@ -24,7 +24,7 @@ webhooks:
-     service:
-       name: eventing-webhook
-       namespace: knative-eventing
--  failurePolicy: Fail
-+  failurePolicy: Ignore
-   sideEffects: None
-   name: sinkbindings.webhook.sources.knative.dev
-   timeoutSeconds: 2
 diff --git a/test/e2e/source_sinkbinding_v1alpha1_test.go b/test/e2e/source_sinkbinding_v1alpha1_test.go
 index 77e2bdb77..48b8116ad 100644
 --- a/test/e2e/source_sinkbinding_v1alpha1_test.go
