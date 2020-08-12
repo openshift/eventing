@@ -1,0 +1,62 @@
+diff --git a/config/core/deployments/webhook.yaml b/config/core/deployments/webhook.yaml
+index eebad41b7..84afe81a6 100644
+--- a/config/core/deployments/webhook.yaml
++++ b/config/core/deployments/webhook.yaml
+@@ -81,7 +81,7 @@ spec:
+           # will NOT be considered by the sinkbinding webhook.
+           # The default is `exclusion`.
+         - name: SINK_BINDING_SELECTION_MODE
+-          value: "exclusion"
++          value: "inclusion"
+ 
+         securityContext:
+           allowPrivilegeEscalation: false
+diff --git a/config/core/webhooks/sinkbindings.yaml b/config/core/webhooks/sinkbindings.yaml
+index a759e9723..badb48ff0 100644
+--- a/config/core/webhooks/sinkbindings.yaml
++++ b/config/core/webhooks/sinkbindings.yaml
+@@ -24,7 +24,7 @@ webhooks:
+     service:
+       name: eventing-webhook
+       namespace: knative-eventing
+-  failurePolicy: Fail
++  failurePolicy: Ignore
+   sideEffects: None
+   name: sinkbindings.webhook.sources.knative.dev
+   timeoutSeconds: 2
+diff --git a/test/e2e/source_sinkbinding_v1alpha1_test.go b/test/e2e/source_sinkbinding_v1alpha1_test.go
+index 77e2bdb77..48b8116ad 100644
+--- a/test/e2e/source_sinkbinding_v1alpha1_test.go
++++ b/test/e2e/source_sinkbinding_v1alpha1_test.go
+@@ -121,6 +121,7 @@ func TestSinkBindingDeployment(t *testing.T) {
+ }
+ 
+ func TestSinkBindingCronJob(t *testing.T) {
++	t.Skip("SRVKE-500: Skipping since we set bindings to inclusion")
+ 	const (
+ 		sinkBindingName = "e2e-sink-binding"
+ 		deploymentName  = "e2e-sink-binding-cronjob"
+diff --git a/test/e2e/source_sinkbinding_v1alpha2_test.go b/test/e2e/source_sinkbinding_v1alpha2_test.go
+index 8e8e0c037..9aa5cc9fb 100644
+--- a/test/e2e/source_sinkbinding_v1alpha2_test.go
++++ b/test/e2e/source_sinkbinding_v1alpha2_test.go
+@@ -122,6 +122,7 @@ func TestSinkBindingV1Alpha2Deployment(t *testing.T) {
+ }
+ 
+ func TestSinkBindingV1Alpha2CronJob(t *testing.T) {
++	t.Skip("SRVKE-500: Skipping since we set bindings to inclusion")
+ 	const (
+ 		sinkBindingName = "e2e-sink-binding"
+ 		deploymentName  = "e2e-sink-binding-cronjob"
+diff --git a/test/e2e/source_sinkbinding_v1beta1_test.go b/test/e2e/source_sinkbinding_v1beta1_test.go
+index 0df34b42e..086a5ba40 100644
+--- a/test/e2e/source_sinkbinding_v1beta1_test.go
++++ b/test/e2e/source_sinkbinding_v1beta1_test.go
+@@ -122,6 +122,7 @@ func TestSinkBindingV1Beta1Deployment(t *testing.T) {
+ }
+ 
+ func TestSinkBindingV1Beta1CronJob(t *testing.T) {
++	t.Skip("SRVKE-500: Skipping since we set bindings to inclusion")
+ 	const (
+ 		sinkBindingName = "e2e-sink-binding"
+ 		deploymentName  = "e2e-sink-binding-cronjob"
