@@ -1771,7 +1771,7 @@ webhooks:
     service:
       name: eventing-webhook
       namespace: knative-eventing
-  failurePolicy: Fail
+  failurePolicy: Ignore
   sideEffects: None
   name: sinkbindings.webhook.sources.knative.dev
   timeoutSeconds: 2
@@ -1828,7 +1828,7 @@ spec:
         - name: WEBHOOK_PORT
           value: "8443"
         - name: SINK_BINDING_SELECTION_MODE
-          value: "exclusion"
+          value: "inclusion"
         securityContext:
           allowPrivilegeEscalation: false
         ports:
