@@ -86,29 +86,22 @@ function install_strimzi(){
 
 function install_serverless(){
   header "Installing Serverless Operator"
-  git clone --branch release-1.6 https://github.com/openshift-knative/serverless-operator.git /tmp/serverless-operator
+  local operator_dir=/tmp/serverless-operator
+  local failed=0
+  git clone --branch release-1.8 https://github.com/openshift-knative/serverless-operator.git $operator_dir
+  #cp openshift/olm/serverless-operator.clusterserviceversion.yaml $operator_dir/olm-catalog/serverless-operator/manifests/serverless-operator.clusterserviceversion.yaml
+  cp openshift/serverless.bash $operator_dir/hack/lib/serverless.bash
   # unset OPENSHIFT_BUILD_NAMESPACE as its used in serverless-operator's CI environment as a switch
   # to use CI built images, we want pre-built images of k-s-o and k-o-i
   unset OPENSHIFT_BUILD_NAMESPACE
-  /tmp/serverless-operator/hack/install.sh || return 1
-  header "Serverless Operator installed successfully"
-}
-
-function create_knative_namespace(){
-  local COMPONENT="knative-$1"
-
-  cat <<-EOF | oc apply -f -
-	apiVersion: v1
-	kind: Namespace
-	metadata:
-	  name: ${COMPONENT}
-	EOF
+  pushd $operator_dir
+  ./hack/install.sh && header "Serverless Operator installed successfully" || failed=1
+  popd
+  return $failed
 }
 
 function install_knative_eventing(){
   header "Installing Knative Eventing"
-
-  create_knative_namespace eventing
 
   cat openshift/release/knative-eventing-ci.yaml > ci
   cat openshift/release/knative-eventing-channelbroker-ci.yaml >> ci
