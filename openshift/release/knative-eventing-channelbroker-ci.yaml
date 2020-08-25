@@ -22,7 +22,7 @@ spec:
       containers:
       - name: broker-controller
         terminationMessagePolicy: FallbackToLogsOnError
-        image: registry.svc.ci.openshift.org/openshift/knative-v0.16.0:knative-eventing-channel-broker
+        image: registry.svc.ci.openshift.org/openshift/knative-v0.15.2:knative-eventing-channel-broker
         resources:
           requests:
             cpu: 100m
@@ -39,11 +39,11 @@ spec:
           - name: METRICS_DOMAIN
             value: knative.dev/eventing
           - name: BROKER_INGRESS_IMAGE
-            value: registry.svc.ci.openshift.org/openshift/knative-v0.16.0:knative-eventing-broker-ingress
+            value: registry.svc.ci.openshift.org/openshift/knative-v0.15.2:knative-eventing-broker-ingress
           - name: BROKER_INGRESS_SERVICE_ACCOUNT
             value: eventing-broker-ingress
           - name: BROKER_FILTER_IMAGE
-            value: registry.svc.ci.openshift.org/openshift/knative-v0.16.0:knative-eventing-broker-filter
+            value: registry.svc.ci.openshift.org/openshift/knative-v0.15.2:knative-eventing-broker-filter
           - name: BROKER_FILTER_SERVICE_ACCOUNT
             value: eventing-broker-filter
           - name: BROKER_IMAGE_PULL_SECRET_NAME
