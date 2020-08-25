@@ -151,12 +151,12 @@ function run_e2e_tests(){
   wait_until_pods_running $EVENTING_NAMESPACE || return 1
 
   if [ -n "$test_name" ]; then # Running a single test.
-    go_test_e2e -timeout=15m -parallel=1 ./test/e2e \
+    go_test_e2e -timeout=15m -parallel=1 ./test/e2e ./test/conformance \
       -run "^(${test_name})$" \
       -brokerclass=MTChannelBasedBroker \
       "$common_opts" || failed=$?
   else
-    go_test_e2e -timeout=90m -parallel=12 ./test/e2e \
+    go_test_e2e -timeout=90m -parallel=12 ./test/e2e ./test/conformance \
       -brokerclass=MTChannelBasedBroker \
       "$common_opts" || failed=$?
   fi

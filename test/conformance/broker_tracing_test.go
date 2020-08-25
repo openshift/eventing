@@ -26,5 +26,6 @@ import (
 )
 
 func TestBrokerTracing(t *testing.T) {
+	t.Skip("We for now ignore tracing tests")
 	helpers.BrokerTracingTestHelperWithChannelTestRunner(t, brokerClass, channelTestRunner, testlib.SetupClientOptionNoop)
 }
