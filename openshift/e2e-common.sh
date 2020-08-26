@@ -110,8 +110,8 @@ function install_knative_eventing(){
 }
 
 function run_e2e_tests(){
-  header "Running tests with Multi Tenant Channel Based Broker"
-  k get ns ${TEST_EVENTING_NAMESPACE} 2>/dev/null || TEST_EVENTING_NAMESPACE="knative-eventing"
+  header "Running e2e tests with Multi Tenant Channel Based Broker"
+  oc get ns ${TEST_EVENTING_NAMESPACE} 2>/dev/null || TEST_EVENTING_NAMESPACE="knative-eventing"
   sed "s/namespace: ${KNATIVE_DEFAULT_NAMESPACE}/namespace: ${TEST_EVENTING_NAMESPACE}/g" ${CONFIG_TRACING_CONFIG} > tmp.tracing.config.yaml
   kubectl replace -f tmp.tracing.config.yaml
   rm tmp.tracing.config.yaml
@@ -129,7 +129,35 @@ function run_e2e_tests(){
   oc -n knative-eventing set env deployment/mt-broker-controller BROKER_INJECTION_DEFAULT=true || return 1
   wait_until_pods_running $EVENTING_NAMESPACE || return 2
 
-  go_test_e2e -timeout=90m -parallel=12 ./test/e2e ./test/conformance \
+  go_test_e2e -timeout=90m -parallel=12 ./test/e2e \
+    "$run_command" \
+    -brokerclass=MTChannelBasedBroker \
+    $common_opts || failed=$?
+
+  return $failed
+}
+
+function run_conformance_tests(){
+  header "Running Conformance tests with Multi Tenant Channel Based Broker"
+  oc get ns ${TEST_EVENTING_NAMESPACE} 2>/dev/null || TEST_EVENTING_NAMESPACE="knative-eventing"
+  sed "s/namespace: ${KNATIVE_DEFAULT_NAMESPACE}/namespace: ${TEST_EVENTING_NAMESPACE}/g" ${CONFIG_TRACING_CONFIG} > tmp.tracing.config.yaml
+  kubectl replace -f tmp.tracing.config.yaml
+  rm tmp.tracing.config.yaml
+  local test_name="${1:-}"
+  local run_command=""
+  local failed=0
+  local channels=messaging.knative.dev/v1beta1:Channel,messaging.knative.dev/v1beta1:InMemoryChannel,messaging.knative.dev/v1:Channel,messaging.knative.dev/v1:InMemoryChannel
+  local sources=sources.knative.dev/v1alpha2:ApiServerSource,sources.knative.dev/v1alpha2:ContainerSource,sources.knative.dev/v1alpha2:PingSource
+
+  local common_opts=" -channels=$channels -sources=$sources --kubeconfig $KUBECONFIG --imagetemplate $TEST_IMAGE_TEMPLATE"
+  if [ -n "$test_name" ]; then
+      local run_command="-run ^(${test_name})$"
+  fi
+
+  oc -n knative-eventing set env deployment/mt-broker-controller BROKER_INJECTION_DEFAULT=true || return 1
+  wait_until_pods_running $EVENTING_NAMESPACE || return 2
+
+  go_test_e2e -timeout=90m -parallel=1 ./test/conformance \
     "$run_command" \
     -brokerclass=MTChannelBasedBroker \
     $common_opts || failed=$?
