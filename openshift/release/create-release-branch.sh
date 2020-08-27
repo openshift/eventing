@@ -18,3 +18,8 @@ make generate-dockerfiles
 make RELEASE=$release generate-release
 git add openshift OWNERS_ALIASES OWNERS Makefile
 git commit -m "Add openshift specific files."
+
+# Apply patches .
+git apply openshift/patches/*
+make RELEASE=$release generate-release
+git commit -am ":fire: Apply carried patches."
