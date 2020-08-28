@@ -93,6 +93,9 @@ function approve_csv {
   install_plan=$(find_install_plan $csv_version)
   oc get $install_plan -n ${OPERATORS_NAMESPACE} -o yaml | sed 's/\(.*approved:\) false/\1 true/' | oc replace -f -
 
+  dump_subscriptions
+  dump_operator_pods
+
   if ! timeout 300 "[[ \$(oc get ClusterServiceVersion $csv_version -n ${OPERATORS_NAMESPACE} -o jsonpath='{.status.phase}') != Succeeded ]]" ; then
     oc get ClusterServiceVersion "$csv_version" -n "${OPERATORS_NAMESPACE}" -o yaml || true
     return 1
@@ -126,6 +129,18 @@ function deploy_knativeserving_cr {
   timeout 900 '[[ $(oc get knativeserving.operator.knative.dev knative-serving -n $SERVING_NAMESPACE -o=jsonpath="{.status.conditions[?(@.type==\"Ready\")].status}") != True ]]'  || return 7
 
   logger.success 'Knative Serving has been installed sucessfully.'
+}
+
+function dump_subscriptions {
+  logger.info "Dump of subscriptions.operators.coreos.com"
+  # This is for status checking.
+  oc get subscriptions.operators.coreos.com -o yaml --all-namespaces || true
+}
+
+function dump_operator_pods {
+  logger.info "Dump of pods in openshift-operators"
+  # This is for status checking.
+  oc get pods -n openshift-operators
 }
 
 function teardown_serverless {
