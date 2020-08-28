@@ -93,11 +93,13 @@ function approve_csv {
   install_plan=$(find_install_plan $csv_version)
   oc get $install_plan -n ${OPERATORS_NAMESPACE} -o yaml | sed 's/\(.*approved:\) false/\1 true/' | oc replace -f -
 
-  dump_subscriptions
-  dump_operator_pods
-
   if ! timeout 300 "[[ \$(oc get ClusterServiceVersion $csv_version -n ${OPERATORS_NAMESPACE} -o jsonpath='{.status.phase}') != Succeeded ]]" ; then
     oc get ClusterServiceVersion "$csv_version" -n "${OPERATORS_NAMESPACE}" -o yaml || true
+
+    dump_subscriptions
+    dump_installplans
+    dump_operator_pods
+
     return 1
   fi
 }
@@ -135,6 +137,12 @@ function dump_subscriptions {
   logger.info "Dump of subscriptions.operators.coreos.com"
   # This is for status checking.
   oc get subscriptions.operators.coreos.com -o yaml --all-namespaces || true
+}
+
+function dump_installplans {
+  logger.info "Dump of installplans.operators.coreos.com"
+  # This is for status checking.
+  oc get installplans.operators.coreos.com -o yaml --all-namespaces || true
 }
 
 function dump_operator_pods {
