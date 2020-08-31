@@ -2998,7 +2998,7 @@ metadata:
     eventing.knative.dev/release: devel
 data:
   channelTemplateSpec: |
-    apiVersion: messaging.knative.dev/v1beta1
+    apiVersion: messaging.knative.dev/v1
     kind: InMemoryChannel
 ---
 apiVersion: v1
@@ -3027,11 +3027,11 @@ metadata:
 data:
   default-ch-config: |
     clusterDefault:
-      apiVersion: messaging.knative.dev/v1beta1
+      apiVersion: messaging.knative.dev/v1
       kind: InMemoryChannel
     namespaceDefaults:
       some-namespace:
-        apiVersion: messaging.knative.dev/v1beta1
+        apiVersion: messaging.knative.dev/v1
         kind: InMemoryChannel
 ---
 apiVersion: v1
