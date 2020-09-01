@@ -47,14 +47,8 @@ func TestNew(t *testing.T) {
 				if err := os.Setenv("PING_IMAGE", "anything"); err != nil {
 					t.Fatalf("Failed to set env var: %v", err)
 				}
-				if err := os.Setenv("JOB_RUNNER_IMAGE", "anything"); err != nil {
-					t.Fatalf("Failed to set env var: %v", err)
-				}
 				defer func() {
 					if err := os.Unsetenv("PING_IMAGE"); err != nil {
-						t.Fatalf("Failed to unset env var: %v", err)
-					}
-					if err := os.Unsetenv("JOB_RUNNER_IMAGE"); err != nil {
 						t.Fatalf("Failed to unset env var: %v", err)
 					}
 				}()

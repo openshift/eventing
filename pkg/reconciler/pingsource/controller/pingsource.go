@@ -74,7 +74,6 @@ type Reconciler struct {
 	kubeClientSet kubernetes.Interface
 
 	receiveAdapterImage string
-	jobRunnerImage      string
 
 	// listers index properties about resources
 	pingLister       listers.PingSourceLister

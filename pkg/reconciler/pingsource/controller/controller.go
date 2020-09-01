@@ -41,8 +41,7 @@ import (
 // github.com/kelseyhightower/envconfig. If this configuration cannot be extracted, then
 // NewController will panic.
 type envConfig struct {
-	Image          string `envconfig:"PING_IMAGE" required:"true"`
-	JobRunnerImage string `envconfig:"JOB_RUNNER_IMAGE" required:"true"`
+	Image string `envconfig:"PING_IMAGE" required:"true"`
 }
 
 // NewController initializes the controller and is called by the generated code
@@ -68,7 +67,6 @@ func NewController(
 		logging.FromContext(ctx).Panicf("unable to process PingSourceSource's required environment variables: %v", err)
 	}
 	r.receiveAdapterImage = env.Image
-	r.jobRunnerImage = env.JobRunnerImage
 
 	impl := pingsourcereconciler.NewImpl(ctx, r)
 
