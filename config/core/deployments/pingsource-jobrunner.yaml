@@ -15,32 +15,37 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: eventing-controller
+  name: pingsource-jobrunner
   namespace: knative-eventing
   labels:
     eventing.knative.dev/release: devel
 spec:
-  replicas: 1
+  replicas: 0
   selector:
     matchLabels:
-      app: eventing-controller
+      "sources.knative.dev/source": "ping-source"
+      "sources.knative.dev/role":   "jobrunner"
   template:
     metadata:
       labels:
-        app: eventing-controller
+        "sources.knative.dev/source": "ping-source"
+        "sources.knative.dev/role":   "jobrunner"
         eventing.knative.dev/release: devel
     spec:
-      serviceAccountName: eventing-controller
+      serviceAccountName: pingsource-jobrunner
 
       containers:
-      - name: eventing-controller
+      - name: dispatcher
         terminationMessagePolicy: FallbackToLogsOnError
-        image: ko://knative.dev/eventing/cmd/controller
+        image: ko://knative.dev/eventing/cmd/ping/jobrunner
 
         resources:
           requests:
-            cpu: 100m
-            memory: 100Mi
+            cpu: 125m
+            memory: 64Mi
+          limits:
+            cpu: 1000m
+            memory: 2048Mi
 
         env:
           - name: SYSTEM_NAMESPACE
@@ -52,13 +57,10 @@ spec:
           - name: CONFIG_OBSERVABILITY_NAME
             value: config-observability
           - name: METRICS_DOMAIN
-            value: knative.dev/eventing
+            value: knative.dev/pingsource-jobrunner
           # PingSource
           - name: PING_IMAGE
             value: ko://knative.dev/eventing/cmd/ping/adapter
-          # APIServerSource
-          - name: APISERVER_RA_IMAGE
-            value: ko://knative.dev/eventing/cmd/apiserver_receive_adapter
 
         securityContext:
           allowPrivilegeEscalation: false
@@ -66,5 +68,3 @@ spec:
         ports:
         - name: metrics
           containerPort: 9090
-        - name: profiling
-          containerPort: 8008

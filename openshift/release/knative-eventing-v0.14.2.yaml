@@ -1734,8 +1734,6 @@ spec:
             value: knative.dev/eventing
           - name: PING_IMAGE
             value: quay.io/openshift-knative/knative-eventing-adapter:v0.14.2
-          - name: JOB_RUNNER_IMAGE
-            value: quay.io/openshift-knative/knative-eventing-jobrunner:v0.14.2
           - name: APISERVER_RA_IMAGE
             value: quay.io/openshift-knative/knative-eventing-apiserver-receive-adapter:v0.14.2
         securityContext:
@@ -1745,6 +1743,63 @@ spec:
           containerPort: 9090
         - name: profiling
           containerPort: 8008
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pingsource-jobrunner
+  namespace: knative-eventing
+  labels:
+    eventing.knative.dev/release: devel
+spec:
+  replicas: 0
+  selector:
+    matchLabels:
+      "sources.knative.dev/source": "ping-source"
+      "sources.knative.dev/role":   "jobrunner"
+  template:
+    metadata:
+      labels:
+        "sources.knative.dev/source": "ping-source"
+        "sources.knative.dev/role":   "jobrunner"
+        eventing.knative.dev/release: devel
+    spec:
+      serviceAccountName: pingsource-jobrunner
+
+      containers:
+      - name: dispatcher
+        terminationMessagePolicy: FallbackToLogsOnError
+        image: ko://knative.dev/eventing/cmd/ping/jobrunner
+
+        resources:
+          requests:
+            cpu: 125m
+            memory: 64Mi
+          limits:
+            cpu: 1000m
+            memory: 2048Mi
+
+        env:
+          - name: SYSTEM_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          - name: CONFIG_LOGGING_NAME
+            value: config-logging
+          - name: CONFIG_OBSERVABILITY_NAME
+            value: config-observability
+          - name: METRICS_DOMAIN
+            value: knative.dev/pingsource-jobrunner
+          # PingSource
+          - name: PING_IMAGE
+            value: ko://knative.dev/eventing/cmd/ping/adapter
+
+        securityContext:
+          allowPrivilegeEscalation: false
+
+        ports:
+        - name: metrics
+          containerPort: 9090
 ---
 apiVersion: admissionregistration.k8s.io/v1beta1
 kind: ValidatingWebhookConfiguration

@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"k8s.io/utils/pointer"
 
 	"go.uber.org/zap"
 	appsv1 "k8s.io/api/apps/v1"
@@ -134,7 +135,7 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, source *v1alpha1.PingSou
 		// Make sure the global job runner is running
 		d, err := r.reconcileJobRunner(ctx, source)
 		if err != nil {
-			logging.FromContext(ctx).Error("Unable to reconcile the job runner", zap.Error(err))
+			logging.FromContext(ctx).Error("Unable to scale up the job runner", zap.Error(err))
 			return err
 		}
 		source.Status.PropagateDeploymentAvailability(d)
@@ -233,28 +234,15 @@ func (r *Reconciler) reconcileJobRunner(ctx context.Context, source *v1alpha1.Pi
 		return nil, err
 	}
 
-	args := resources.JobRunnerArgs{
-		ServiceAccountName: jobRunnerName,
-		JobRunnerName:      jobRunnerName,
-		JobRunnerNamespace: system.Namespace(),
-		Image:              r.jobRunnerImage,
-	}
-	expected := resources.MakeJobRunner(args)
-
 	d, err := r.deploymentLister.Deployments(system.Namespace()).Get(jobRunnerName)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			d, err := r.kubeClientSet.AppsV1().Deployments(system.Namespace()).Create(expected)
-			if err != nil {
-				controller.GetEventRecorder(ctx).Eventf(source, corev1.EventTypeWarning, pingSourceDeploymentCreated, "Cluster-scoped deployment not created (%v)", err)
-				return nil, err
-			}
-			controller.GetEventRecorder(ctx).Event(source, corev1.EventTypeNormal, pingSourceDeploymentCreated, "Cluster-scoped deployment created")
-			return d, nil
+			return nil, fmt.Errorf("pingsource job runner deployment doesn't exist! %v", err)
+		} else {
+			return nil, fmt.Errorf("error getting job runner deployment %v", err)
 		}
-		return nil, fmt.Errorf("error getting job runner deployment %v", err)
-	} else if podSpecChanged(d.Spec.Template.Spec, expected.Spec.Template.Spec) {
-		d.Spec.Template.Spec = expected.Spec.Template.Spec
+	} else if *d.Spec.Replicas != 1 {
+		d.Spec.Replicas = pointer.Int32Ptr(1)
 		if d, err = r.kubeClientSet.AppsV1().Deployments(system.Namespace()).Update(d); err != nil {
 			return d, err
 		}
@@ -262,8 +250,8 @@ func (r *Reconciler) reconcileJobRunner(ctx context.Context, source *v1alpha1.Pi
 		return d, nil
 	} else {
 		logging.FromContext(ctx).Debug("Reusing existing cluster-scoped deployment", zap.Any("deployment", d))
+		return d, nil
 	}
-	return d, nil
 }
 
 func checkResourcesStatus(src *v1alpha1.PingSource) error {

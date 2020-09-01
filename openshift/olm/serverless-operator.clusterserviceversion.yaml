@@ -374,10 +374,10 @@ spec:
                       value: registry.svc.ci.openshift.org/openshift/knative-v0.14.2:knative-eventing-channel-dispatcher
                     - name: IMAGE_v0.14.0-upgrade__upgrade-brokers
                       value: registry.svc.ci.openshift.org/openshift/knative-v0.14.2:knative-eventing-upgrade-v0-14-0
+                    - name: IMAGE_pingsource-jobrunner__dispatcher
+                      value: registry.svc.ci.openshift.org/openshift/knative-v0.14.2:knative-eventing-jobrunner
                     - name: IMAGE_PING_IMAGE
                       value: registry.svc.ci.openshift.org/openshift/knative-v0.14.2:knative-eventing-adapter
-                    - name: IMAGE_JOB_RUNNER_IMAGE
-                      value: registry.svc.ci.openshift.org/openshift/knative-v0.14.2:knative-eventing-jobrunner
                     - name: IMAGE_APISERVER_RA_IMAGE
                       value: registry.svc.ci.openshift.org/openshift/knative-v0.14.2:knative-eventing-apiserver-receive-adapter
                     - name: IMAGE_BROKER_INGRESS_IMAGE
@@ -539,10 +539,10 @@ spec:
       image: registry.svc.ci.openshift.org/openshift/knative-v0.14.2:knative-eventing-channel-dispatcher
     - name: IMAGE_v0.14.0-upgrade__upgrade-brokers
       image: registry.svc.ci.openshift.org/openshift/knative-v0.14.2:knative-eventing-upgrade-v0-14-0
+    - name: IMAGE_pingsource-jobrunner__dispatcher
+      image: registry.svc.ci.openshift.org/openshift/knative-v0.14.2:knative-eventing-jobrunner
     - name: IMAGE_PING_IMAGE
       image: registry.svc.ci.openshift.org/openshift/knative-v0.14.2:knative-eventing-adapter
-    - name: IMAGE_JOB_RUNNER_IMAGE
-      image: registry.svc.ci.openshift.org/openshift/knative-v0.14.2:knative-eventing-jobrunner
     - name: IMAGE_APISERVER_RA_IMAGE
       image: registry.svc.ci.openshift.org/openshift/knative-v0.14.2:knative-eventing-apiserver-receive-adapter
     - name: IMAGE_BROKER_INGRESS_IMAGE
