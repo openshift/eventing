@@ -26,5 +26,6 @@ import (
 )
 
 func TestChannelTracingWithReply(t *testing.T) {
+        t.Skip("We for now ignore tracing tests")
 	helpers.ChannelTracingTestHelperWithChannelTestRunner(t, channelTestRunner, testlib.SetupClientOptionNoop)
 }
