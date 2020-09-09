@@ -1,0 +1,22 @@
+diff --git a/test/conformance/broker_tracing_test.go b/test/conformance/broker_tracing_test.go
+index 6e8a124dd..2ef3a64ec 100644
+--- a/test/conformance/broker_tracing_test.go
++++ b/test/conformance/broker_tracing_test.go
+@@ -26,5 +26,6 @@ import (
+ )
+ 
+ func TestBrokerTracing(t *testing.T) {
++        t.Skip("We for now ignore tracing tests")
+ 	helpers.BrokerTracingTestHelperWithChannelTestRunner(t, brokerClass, channelTestRunner, testlib.SetupClientOptionNoop)
+ }
+diff --git a/test/conformance/channel_tracing_test.go b/test/conformance/channel_tracing_test.go
+index 5690f42ff..857f36050 100644
+--- a/test/conformance/channel_tracing_test.go
++++ b/test/conformance/channel_tracing_test.go
+@@ -26,5 +26,6 @@ import (
+ )
+ 
+ func TestChannelTracingWithReply(t *testing.T) {
++        t.Skip("We for now ignore tracing tests")
+ 	helpers.ChannelTracingTestHelperWithChannelTestRunner(t, channelTestRunner, testlib.SetupClientOptionNoop)
+ }
