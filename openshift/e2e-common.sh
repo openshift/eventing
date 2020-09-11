@@ -67,7 +67,7 @@ function install_serverless(){
   header "Installing Serverless Operator"
   local operator_dir=/tmp/serverless-operator
   local failed=0
-  git clone --branch release-1.8 https://github.com/openshift-knative/serverless-operator.git $operator_dir
+  git clone --branch release-1.9 https://github.com/openshift-knative/serverless-operator.git $operator_dir
   #cp openshift/olm/serverless-operator.clusterserviceversion.yaml $operator_dir/olm-catalog/serverless-operator/manifests/serverless-operator.clusterserviceversion.yaml
   cp openshift/serverless.bash $operator_dir/hack/lib/serverless.bash
   # unset OPENSHIFT_BUILD_NAMESPACE as its used in serverless-operator's CI environment as a switch
