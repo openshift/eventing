@@ -109,6 +109,17 @@ function install_knative_eventing(){
   #oc get pod -n knative-eventing -o yaml | grep image: | grep -v knative-eventing-operator | grep -v ${INTERNAL_REGISTRY} && return 1 || true
 }
 
+function install_knative_kafka() {
+  header "Setting up Knative Apache Kafka components"
+
+  curl -L https://raw.githubusercontent.com/openshift/knative-eventing-contrib/release-v0.17.1/openshift/release/knative-eventing-kafka-contrib-v0.17.1.yaml \
+    | sed 's/namespace: .*/namespace: knative-eventing/' \
+    | sed 's/REPLACE_WITH_CLUSTER_URL/my-cluster-kafka-bootstrap.kafka:9092/' \
+    | kubectl apply --filename -
+
+  wait_until_pods_running $EVENTING_NAMESPACE || return 1
+}
+
 function run_e2e_tests(){
   header "Running tests with Multi Tenant Channel Based Broker"
   k get ns ${TEST_EVENTING_NAMESPACE} 2>/dev/null || TEST_EVENTING_NAMESPACE="knative-eventing"
