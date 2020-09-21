@@ -1,5 +1,5 @@
 diff --git a/config/core/deployments/webhook.yaml b/config/core/deployments/webhook.yaml
-index eebad41b7..84afe81a6 100644
+index a8dfef10b..71bbce864 100644
 --- a/config/core/deployments/webhook.yaml
 +++ b/config/core/deployments/webhook.yaml
 @@ -81,7 +81,7 @@ spec:
@@ -8,6 +8,6 @@ index eebad41b7..84afe81a6 100644
          - name: SINK_BINDING_SELECTION_MODE
 -          value: "exclusion"
 +          value: "inclusion"
- 
-         securityContext:
-           allowPrivilegeEscalation: false
+         - name: POD_NAME
+           valueFrom:
+             fieldRef:
