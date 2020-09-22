@@ -2,6 +2,7 @@
 
 export EVENTING_NAMESPACE=knative-eventing
 export TEST_EVENTING_NAMESPACE=$EVENTING_NAMESPACE
+export KNATIVE_DEFAULT_NAMESPACE=$EVENTING_NAMESPACE
 export OLM_NAMESPACE=openshift-marketplace
 
 function scale_up_workers(){
