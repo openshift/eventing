@@ -178,6 +178,13 @@ func main() {
 		<-ticker.C
 		// Only send a limited number of messages.
 		if maxMsg != 0 && maxMsg == sequence {
+
+			if addTracing {
+				log.Printf("will sleep for 5s to let the traces be published")
+				time.Sleep(5 * time.Second)
+				log.Printf("awake, exiting")
+			}
+
 			return
 		}
 	}
