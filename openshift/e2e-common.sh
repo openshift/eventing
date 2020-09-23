@@ -3,6 +3,8 @@
 export EVENTING_NAMESPACE=knative-eventing
 export TEST_EVENTING_NAMESPACE=$EVENTING_NAMESPACE
 export OLM_NAMESPACE=openshift-marketplace
+export KNATIVE_DEFAULT_NAMESPACE=$EVENTING_NAMESPACE
+export CONFIG_TRACING_CONFIG="test/config/config-tracing.yaml"
 
 function scale_up_workers(){
   local cluster_api_ns="openshift-machine-api"

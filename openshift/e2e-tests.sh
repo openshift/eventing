@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 
 # shellcheck disable=SC1090
-source "$(dirname "$0")/../test/e2e-common.sh"
+source "$(dirname "$0")/../vendor/knative.dev/test-infra/scripts/e2e-tests.sh"
 source "$(dirname "$0")/e2e-common.sh"
 
-set -x
+set -Eeuox pipefail
 
 export TEST_IMAGE_TEMPLATE="${IMAGE_FORMAT//\$\{component\}/knative-eventing-test-{{.Name}}}"
 
