@@ -53,9 +53,9 @@ function deploy_serverless_operator_latest {
 }
 
 function deploy_serverless_operator {
-  logger.info 'Install the Serverless Operator'
   local csv
   csv="$1"
+  logger.info "Install the Serverless Operator ${csv}"
 
   cat <<EOF | oc apply -f - || return $?
 apiVersion: operators.coreos.com/v1alpha1
@@ -82,7 +82,7 @@ function approve_csv {
   channel=$2
 
   # Ensure channel and source is set properly
-  oc patch subscription "$OPERATOR" -n "${OPERATORS_NAMESPACE}" \
+  oc patch subscriptions.operators.coreos.com "$OPERATOR" -n "${OPERATORS_NAMESPACE}" \
     --type 'merge' \
     --patch '{"spec": {"channel": "'"${channel}"'", "source": "'"${OLM_SOURCE}"'"}}' \
     || return $?
@@ -145,7 +145,7 @@ function teardown_serverless {
   logger.info 'Ensure no knative eventing pods running'
   timeout 600 "[[ \$(oc get pods -n ${EVENTING_NAMESPACE} --field-selector=status.phase!=Succeeded -o jsonpath='{.items}') != '[]' ]]" || return 9
 
-  oc delete subscription -n "${OPERATORS_NAMESPACE}" "${OPERATOR}" 2>/dev/null
+  oc delete subscriptions.operators.coreos.com -n "${OPERATORS_NAMESPACE}" "${OPERATOR}" 2>/dev/null
   for ip in $(oc get installplan -n "${OPERATORS_NAMESPACE}" | grep serverless-operator | cut -f1 -d' '); do
     oc delete installplan -n "${OPERATORS_NAMESPACE}" $ip
   done
