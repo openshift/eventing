@@ -1,0 +1,13 @@
+diff --git a/config/core/deployments/webhook.yaml b/config/core/deployments/webhook.yaml
+index a8dfef10b..71bbce864 100644
+--- a/config/core/deployments/webhook.yaml
++++ b/config/core/deployments/webhook.yaml
+@@ -81,7 +81,7 @@ spec:
+           # will NOT be considered by the sinkbinding webhook.
+           # The default is `exclusion`.
+         - name: SINK_BINDING_SELECTION_MODE
+-          value: "exclusion"
++          value: "inclusion"
+         - name: POD_NAME
+           valueFrom:
+             fieldRef:
