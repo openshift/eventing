@@ -13,13 +13,17 @@ IMAGE=
 OPENSHIFT=${CURDIR}/../../github.com/openshift/release
 
 install:
-	go install $(CORE_IMAGES)
+	for img in $(CORE_IMAGES); do \
+		go install $$img ; \
+	done
 	go build -o $(GOPATH)/bin/mtbroker_ingress ./cmd/mtbroker/ingress/
 	go build -o $(GOPATH)/bin/mtbroker_filter ./cmd/mtbroker/filter/
 .PHONY: install
 
 test-install:
-	go install $(TEST_IMAGES)
+	for img in $(TEST_IMAGES); do \
+		go install $$img ; \
+	done
 .PHONY: test-install
 
 test-e2e:
