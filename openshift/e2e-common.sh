@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 export EVENTING_NAMESPACE=knative-eventing
-export TEST_EVENTING_NAMESPACE=$EVENTING_NAMESPACE
+export SYSTEM_NAMESPACE=$EVENTING_NAMESPACE
 export OLM_NAMESPACE=openshift-marketplace
 export KNATIVE_DEFAULT_NAMESPACE=$EVENTING_NAMESPACE
 export CONFIG_TRACING_CONFIG="test/config/config-tracing.yaml"
@@ -98,8 +98,8 @@ function install_knative_eventing(){
 
 function run_e2e_tests(){
   header "Running tests with Multi Tenant Channel Based Broker"
-  oc get ns ${TEST_EVENTING_NAMESPACE} 2>/dev/null || TEST_EVENTING_NAMESPACE="knative-eventing"
-  sed "s/namespace: ${KNATIVE_DEFAULT_NAMESPACE}/namespace: ${TEST_EVENTING_NAMESPACE}/g" ${CONFIG_TRACING_CONFIG} | oc replace -f -
+  oc get ns ${SYSTEM_NAMESPACE} 2>/dev/null || SYSTEM_NAMESPACE="knative-eventing"
+  sed "s/namespace: ${KNATIVE_DEFAULT_NAMESPACE}/namespace: ${SYSTEM_NAMESPACE}/g" ${CONFIG_TRACING_CONFIG} | oc replace -f -
   local test_name="${1:-}"
   local run_command=""
   local failed=0
