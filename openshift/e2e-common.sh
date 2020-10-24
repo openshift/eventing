@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
-export EVENTING_NAMESPACE=knative-eventing
+export EVENTING_NAMESPACE="${EVENTING_NAMESPACE:-knative-eventing}"
 export SYSTEM_NAMESPACE=$EVENTING_NAMESPACE
-export OLM_NAMESPACE=openshift-marketplace
+export ZIPKIN_NAMESPACE=$EVENTING_NAMESPACE
 export KNATIVE_DEFAULT_NAMESPACE=$EVENTING_NAMESPACE
 export CONFIG_TRACING_CONFIG="test/config/config-tracing.yaml"
 
@@ -120,6 +120,84 @@ function run_e2e_tests(){
     $common_opts || failed=$?
 
   return $failed
+}
+
+function install_tracing {
+  deploy_zipkin
+  enable_eventing_tracing
+}
+
+function deploy_zipkin {
+  logger.info "Installing Zipkin in namespace ${ZIPKIN_NAMESPACE}"
+  cat <<EOF | oc apply -f - || return $?
+apiVersion: v1
+kind: Service
+metadata:
+  name: zipkin
+  namespace: ${ZIPKIN_NAMESPACE}
+spec:
+  type: NodePort
+  ports:
+  - name: http
+    port: 9411
+  selector:
+    app: zipkin
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zipkin
+  namespace: ${ZIPKIN_NAMESPACE}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: zipkin
+  template:
+    metadata:
+      labels:
+        app: zipkin
+      annotations:
+        sidecar.istio.io/inject: "false"
+    spec:
+      containers:
+      - name: zipkin
+        image: docker.io/openzipkin/zipkin:2.13.0
+        ports:
+        - containerPort: 9411
+        env:
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        resources:
+          limits:
+            memory: 1000Mi
+          requests:
+            memory: 256Mi
+---
+EOF
+
+  logger.info "Waiting until Zipkin is available"
+  kubectl wait deployment --all --timeout=600s --for=condition=Available -n ${ZIPKIN_NAMESPACE} || return 1
+}
+
+function enable_eventing_tracing {
+  header_text "Configuring tracing for Eventing"
+
+  cat <<EOF | oc apply -f - || return $?
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config-tracing
+  namespace: ${EVENTING_NAMESPACE}
+data:
+  enable: "true"
+  zipkin-endpoint: "http://zipkin.${ZIPKIN_NAMESPACE}.svc.cluster.local:9411/api/v2/spans"
+  sample-rate: "1.0"
+  debug: "true"
+EOF
 }
 
 function run_conformance_tests(){
