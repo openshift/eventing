@@ -50,78 +50,6 @@ function timeout_non_zero() {
   return 0
 }
 
-function install_serverless(){
-  header "Installing Serverless Operator"
-  local operator_dir=/tmp/serverless-operator
-  local failed=0
-  git clone --branch release-1.8 https://github.com/openshift-knative/serverless-operator.git $operator_dir
-  #cp openshift/olm/serverless-operator.clusterserviceversion.yaml $operator_dir/olm-catalog/serverless-operator/manifests/serverless-operator.clusterserviceversion.yaml
-  cp openshift/serverless.bash $operator_dir/hack/lib/serverless.bash
-  # unset OPENSHIFT_BUILD_NAMESPACE as its used in serverless-operator's CI environment as a switch
-  # to use CI built images, we want pre-built images of k-s-o and k-o-i
-  unset OPENSHIFT_BUILD_NAMESPACE
-  pushd $operator_dir
-  ./hack/install.sh && header "Serverless Operator installed successfully" || failed=1
-  popd
-  return $failed
-}
-
-function install_knative_eventing(){
-  header "Installing Knative Eventing"
-
-  cat openshift/release/knative-eventing-ci.yaml > ci
-  cat openshift/release/knative-eventing-mtbroker-ci.yaml >> ci
-
-  sed -i -e "s|registry.svc.ci.openshift.org/openshift/knative-.*:knative-eventing-controller|${IMAGE_FORMAT//\$\{component\}/knative-eventing-controller}|g"                               ci
-  sed -i -e "s|registry.svc.ci.openshift.org/openshift/knative-.*:knative-eventing-ping|${IMAGE_FORMAT//\$\{component\}/knative-eventing-ping}|g"                                           ci
-  sed -i -e "s|registry.svc.ci.openshift.org/openshift/knative-.*:knative-eventing-mtping|${IMAGE_FORMAT//\$\{component\}/knative-eventing-mtping}|g"                                       ci
-  sed -i -e "s|registry.svc.ci.openshift.org/openshift/knative-.*:knative-eventing-apiserver-receive-adapter|${IMAGE_FORMAT//\$\{component\}/knative-eventing-apiserver-receive-adapter}|g" ci
-  sed -i -e "s|registry.svc.ci.openshift.org/openshift/knative-.*:knative-eventing-webhook|${IMAGE_FORMAT//\$\{component\}/knative-eventing-webhook}|g"                                     ci
-  sed -i -e "s|registry.svc.ci.openshift.org/openshift/knative-.*:knative-eventing-channel-controller|${IMAGE_FORMAT//\$\{component\}/knative-eventing-channel-controller}|g"               ci
-  sed -i -e "s|registry.svc.ci.openshift.org/openshift/knative-.*:knative-eventing-channel-dispatcher|${IMAGE_FORMAT//\$\{component\}/knative-eventing-channel-dispatcher}|g"               ci
-  sed -i -e "s|registry.svc.ci.openshift.org/openshift/knative-.*:knative-eventing-mtbroker-ingress|${IMAGE_FORMAT//\$\{component\}/knative-eventing-mtbroker-ingress}|g"                   ci
-  sed -i -e "s|registry.svc.ci.openshift.org/openshift/knative-.*:knative-eventing-mtbroker-filter|${IMAGE_FORMAT//\$\{component\}/knative-eventing-mtbroker-filter}|g"                     ci
-  sed -i -e "s|registry.svc.ci.openshift.org/openshift/knative-.*:knative-eventing-mtchannel-broker|${IMAGE_FORMAT//\$\{component\}/knative-eventing-mtchannel-broker}|g"                   ci
-  sed -i -e "s|registry.svc.ci.openshift.org/openshift/knative-.*:knative-eventing-sugar-controller|${IMAGE_FORMAT//\$\{component\}/knative-eventing-sugar-controller}|g"                   ci
-
-  oc apply -f ci
-  rm ci
-
-  # Wait for 5 pods to appear first
-  timeout_non_zero 900 '[[ $(oc get pods -n $EVENTING_NAMESPACE --no-headers | wc -l) -lt 5 ]]' || return 1
-  wait_until_pods_running $EVENTING_NAMESPACE || return 1
-
-  # Assert that there are no images used that are not CI images (which should all be using the $INTERNAL_REGISTRY)
-  # (except for the knative-eventing-operator)
-  #oc get pod -n knative-eventing -o yaml | grep image: | grep -v knative-eventing-operator | grep -v ${INTERNAL_REGISTRY} && return 1 || true
-}
-
-function run_e2e_tests(){
-  header "Running tests with Multi Tenant Channel Based Broker"
-  oc get ns ${SYSTEM_NAMESPACE} 2>/dev/null || SYSTEM_NAMESPACE="knative-eventing"
-  sed "s/namespace: ${KNATIVE_DEFAULT_NAMESPACE}/namespace: ${SYSTEM_NAMESPACE}/g" ${CONFIG_TRACING_CONFIG} | oc replace -f -
-  local test_name="${1:-}"
-  local run_command=""
-  local failed=0
-  local channels=messaging.knative.dev/v1beta1:Channel,messaging.knative.dev/v1beta1:InMemoryChannel,messaging.knative.dev/v1:Channel,messaging.knative.dev/v1:InMemoryChannel
-  local sources=sources.knative.dev/v1alpha2:ApiServerSource,sources.knative.dev/v1alpha2:ContainerSource,sources.knative.dev/v1alpha2:PingSource
-
-  local common_opts=" -channels=$channels -sources=$sources --kubeconfig $KUBECONFIG --imagetemplate $TEST_IMAGE_TEMPLATE"
-  if [ -n "$test_name" ]; then
-      local run_command="-run ^(${test_name})$"
-  fi
-
-  oc -n knative-eventing set env deployment/mt-broker-controller BROKER_INJECTION_DEFAULT=true || return 1
-  wait_until_pods_running $EVENTING_NAMESPACE || return 2
-
-  go_test_e2e -timeout=90m -parallel=12 ./test/e2e \
-    "$run_command" \
-    -brokerclass=MTChannelBasedBroker \
-    $common_opts || failed=$?
-
-  return $failed
-}
-
 function install_tracing {
   deploy_zipkin
   enable_eventing_tracing
@@ -200,8 +128,80 @@ data:
 EOF
 }
 
+function install_serverless(){
+  header "Installing Serverless Operator"
+  local operator_dir=/tmp/serverless-operator
+  local failed=0
+  git clone --branch release-1.8 https://github.com/openshift-knative/serverless-operator.git $operator_dir
+  #cp openshift/olm/serverless-operator.clusterserviceversion.yaml $operator_dir/olm-catalog/serverless-operator/manifests/serverless-operator.clusterserviceversion.yaml
+  cp openshift/serverless.bash $operator_dir/hack/lib/serverless.bash
+  # unset OPENSHIFT_BUILD_NAMESPACE as its used in serverless-operator's CI environment as a switch
+  # to use CI built images, we want pre-built images of k-s-o and k-o-i
+  unset OPENSHIFT_BUILD_NAMESPACE
+  pushd $operator_dir
+  ./hack/install.sh && header "Serverless Operator installed successfully" || failed=1
+  popd
+  return $failed
+}
+
+function install_knative_eventing(){
+  header "Installing Knative Eventing"
+
+  cat openshift/release/knative-eventing-ci.yaml > ci
+  cat openshift/release/knative-eventing-mtbroker-ci.yaml >> ci
+
+  sed -i -e "s|registry.svc.ci.openshift.org/openshift/knative-.*:knative-eventing-controller|${IMAGE_FORMAT//\$\{component\}/knative-eventing-controller}|g"                               ci
+  sed -i -e "s|registry.svc.ci.openshift.org/openshift/knative-.*:knative-eventing-ping|${IMAGE_FORMAT//\$\{component\}/knative-eventing-ping}|g"                                           ci
+  sed -i -e "s|registry.svc.ci.openshift.org/openshift/knative-.*:knative-eventing-mtping|${IMAGE_FORMAT//\$\{component\}/knative-eventing-mtping}|g"                                       ci
+  sed -i -e "s|registry.svc.ci.openshift.org/openshift/knative-.*:knative-eventing-apiserver-receive-adapter|${IMAGE_FORMAT//\$\{component\}/knative-eventing-apiserver-receive-adapter}|g" ci
+  sed -i -e "s|registry.svc.ci.openshift.org/openshift/knative-.*:knative-eventing-webhook|${IMAGE_FORMAT//\$\{component\}/knative-eventing-webhook}|g"                                     ci
+  sed -i -e "s|registry.svc.ci.openshift.org/openshift/knative-.*:knative-eventing-channel-controller|${IMAGE_FORMAT//\$\{component\}/knative-eventing-channel-controller}|g"               ci
+  sed -i -e "s|registry.svc.ci.openshift.org/openshift/knative-.*:knative-eventing-channel-dispatcher|${IMAGE_FORMAT//\$\{component\}/knative-eventing-channel-dispatcher}|g"               ci
+  sed -i -e "s|registry.svc.ci.openshift.org/openshift/knative-.*:knative-eventing-mtbroker-ingress|${IMAGE_FORMAT//\$\{component\}/knative-eventing-mtbroker-ingress}|g"                   ci
+  sed -i -e "s|registry.svc.ci.openshift.org/openshift/knative-.*:knative-eventing-mtbroker-filter|${IMAGE_FORMAT//\$\{component\}/knative-eventing-mtbroker-filter}|g"                     ci
+  sed -i -e "s|registry.svc.ci.openshift.org/openshift/knative-.*:knative-eventing-mtchannel-broker|${IMAGE_FORMAT//\$\{component\}/knative-eventing-mtchannel-broker}|g"                   ci
+  sed -i -e "s|registry.svc.ci.openshift.org/openshift/knative-.*:knative-eventing-sugar-controller|${IMAGE_FORMAT//\$\{component\}/knative-eventing-sugar-controller}|g"                   ci
+
+  oc apply -f ci
+  rm ci
+
+  # Wait for 5 pods to appear first
+  timeout_non_zero 900 '[[ $(oc get pods -n $EVENTING_NAMESPACE --no-headers | wc -l) -lt 5 ]]' || return 1
+  wait_until_pods_running $EVENTING_NAMESPACE || return 1
+
+  # Assert that there are no images used that are not CI images (which should all be using the $INTERNAL_REGISTRY)
+  # (except for the knative-eventing-operator)
+  #oc get pod -n knative-eventing -o yaml | grep image: | grep -v knative-eventing-operator | grep -v ${INTERNAL_REGISTRY} && return 1 || true
+}
+
+function run_e2e_tests(){
+  header "Running E2E tests with Multi Tenant Channel Based Broker"
+  oc get ns ${SYSTEM_NAMESPACE} 2>/dev/null || SYSTEM_NAMESPACE="knative-eventing"
+  sed "s/namespace: ${KNATIVE_DEFAULT_NAMESPACE}/namespace: ${SYSTEM_NAMESPACE}/g" ${CONFIG_TRACING_CONFIG} | oc replace -f -
+  local test_name="${1:-}"
+  local run_command=""
+  local failed=0
+  local channels=messaging.knative.dev/v1beta1:Channel,messaging.knative.dev/v1beta1:InMemoryChannel,messaging.knative.dev/v1:Channel,messaging.knative.dev/v1:InMemoryChannel
+  local sources=sources.knative.dev/v1alpha2:ApiServerSource,sources.knative.dev/v1alpha2:ContainerSource,sources.knative.dev/v1alpha2:PingSource
+
+  local common_opts=" -channels=$channels -sources=$sources --kubeconfig $KUBECONFIG --imagetemplate $TEST_IMAGE_TEMPLATE"
+  if [ -n "$test_name" ]; then
+      local run_command="-run ^(${test_name})$"
+  fi
+
+  oc -n knative-eventing set env deployment/mt-broker-controller BROKER_INJECTION_DEFAULT=true || return 1
+  wait_until_pods_running $EVENTING_NAMESPACE || return 2
+
+  go_test_e2e -timeout=90m -parallel=12 ./test/e2e \
+    "$run_command" \
+    -brokerclass=MTChannelBasedBroker \
+    $common_opts || failed=$?
+
+  return $failed
+}
+
 function run_conformance_tests(){
-  header "Running tests with Multi Tenant Channel Based Broker"
+  header "Running Conformance tests with Multi Tenant Channel Based Broker"
   oc get ns ${SYSTEM_NAMESPACE} 2>/dev/null || SYSTEM_NAMESPACE="knative-eventing"
   sed "s/namespace: ${KNATIVE_DEFAULT_NAMESPACE}/namespace: ${SYSTEM_NAMESPACE}/g" ${CONFIG_TRACING_CONFIG} | oc replace -f -
   local test_name="${1:-}"
