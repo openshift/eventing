@@ -99,11 +99,11 @@ func (sb *SinkBinding) Do(ctx context.Context, ps *duckv1.WithPod) {
 
 	resolver := GetURIResolver(ctx)
 	if resolver == nil {
-		logging.FromContext(ctx).Errorf("No Resolver associated with context for sink: %+v", sb)
+		logging.FromContext(ctx).Sugar().Errorf("No Resolver associated with context for sink: %+v", sb)
 	}
-	uri, err := resolver.URIFromDestinationV1(ctx, sb.Spec.Sink, sb)
+	uri, err := resolver.URIFromDestinationV1(sb.Spec.Sink, sb)
 	if err != nil {
-		logging.FromContext(ctx).Errorw("URI could not be extracted from destination: ", zap.Error(err))
+		logging.FromContext(ctx).Error("URI could not be extracted from destination: ", zap.Error(err))
 		return
 	}
 	sb.Status.MarkSink(uri)
