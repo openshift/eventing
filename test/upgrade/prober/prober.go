@@ -123,6 +123,7 @@ func (p *prober) deploy() {
 func (p *prober) remove() {
 	if p.config.Serving.Use {
 		p.removeForwarder()
+		p.removeReceiverKService()
 	}
 	ensure.NoError(p.client.Tracker.Clean(true))
 }

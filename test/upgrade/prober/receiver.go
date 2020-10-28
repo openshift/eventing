@@ -17,6 +17,7 @@ package prober
 
 import (
 	"fmt"
+	"net/url"
 
 	"github.com/wavesoftware/go-ensure"
 	appsv1 "k8s.io/api/apps/v1"
@@ -24,6 +25,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	testlib "knative.dev/eventing/test/lib"
+	"knative.dev/eventing/test/lib/duck"
+	"knative.dev/eventing/test/lib/resources"
 	watholaconfig "knative.dev/eventing/test/upgrade/prober/wathola/config"
 	pkgTest "knative.dev/pkg/test"
 )
@@ -34,8 +37,19 @@ var (
 )
 
 func (p *prober) deployReceiver() {
-	p.deployReceiverDeployment()
-	p.deployReceiverService()
+	if p.config.Serving.Use {
+		p.deployReceiverKService()
+	} else {
+		p.deployReceiverDeployment()
+		p.deployReceiverService()
+	}
+}
+
+func (p *prober) removeReceiverKService() {
+	p.log.Info("Remove receiver knative service: ", receiverName)
+	serving := p.client.Dynamic.Resource(resources.KServicesGVR).Namespace(p.client.Namespace)
+	err := serving.Delete(receiverName, &metav1.DeleteOptions{})
+	ensure.NoError(err)
 }
 
 func (p *prober) deployReceiverDeployment() {
@@ -54,7 +68,7 @@ func (p *prober) deployReceiverDeployment() {
 }
 
 func (p *prober) deployReceiverService() {
-	p.log.Infof("Deploy of receiver service: %v", receiverName)
+	p.log.Info("Deploy of receiver service: ", receiverName)
 	service := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      receiverName,
@@ -91,6 +105,48 @@ func (p *prober) deployReceiverService() {
 	} else {
 		p.log.Debugf("Node port for service: %v is %v", receiverName, receiverNodePort)
 	}
+}
+
+func (p *prober) deployReceiverKService() {
+	p.log.Info("Deploy of receiver knative service: ", receiverName)
+	deployment := p.createReceiverDeployment()
+	podSpec := deployment.Spec.Template.Spec
+	podSpec.Containers[0].ReadinessProbe.HTTPGet = &corev1.HTTPGetAction{
+		Path: p.config.HealthEndpoint,
+	}
+	deployment.ObjectMeta.Annotations = map[string]string{
+		"autoscaling.knative.dev/minScale": "1",
+		"autoscaling.knative.dev/maxScale": "1",
+	}
+	ksvc := kService(deployment.ObjectMeta, podSpec)
+	serving := p.client.Dynamic.Resource(resources.KServicesGVR).Namespace(p.client.Namespace)
+	_, err := serving.Create(ksvc, metav1.CreateOptions{})
+	ensure.NoError(err)
+
+	sc := p.servingClient()
+	testlib.WaitFor(fmt.Sprint("receiver knative service be ready: ", receiverName), func() error {
+		return duck.WaitForKServiceReady(sc, receiverName, p.client.Namespace)
+	})
+}
+
+func (p *prober) receiverKServiceAddress() *url.URL {
+	serving := p.client.Dynamic.Resource(resources.KServicesGVR).Namespace(p.client.Namespace)
+	ksvc, err := serving.Get(receiverName, metav1.GetOptions{})
+	ensure.NoError(err)
+	content := ksvc.UnstructuredContent()
+	maybeStatus, ok := content["status"]
+	if !ok {
+		panic("no status on knative service")
+	}
+	status := maybeStatus.(map[string]interface{})
+	maybeURL, ok := status["url"]
+	if !ok {
+		panic("no url on knative service status")
+	}
+	u, err := url.Parse(maybeURL.(string))
+	ensure.NoError(err)
+	u.Path = "/report"
+	return u
 }
 
 func (p *prober) createReceiverDeployment() *appsv1.Deployment {
