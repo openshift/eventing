@@ -50,11 +50,11 @@ func (p *prober) deployReceiverPod() {
 		Spec: corev1.PodSpec{
 			Volumes: []corev1.Volume{
 				{
-					Name: p.config.Wathola.Config.Name,
+					Name: p.config.ConfigMapName,
 					VolumeSource: corev1.VolumeSource{
 						ConfigMap: &corev1.ConfigMapVolumeSource{
 							LocalObjectReference: corev1.LocalObjectReference{
-								Name: p.config.Wathola.Config.Name,
+								Name: p.config.ConfigMapName,
 							},
 						},
 					},
@@ -66,15 +66,15 @@ func (p *prober) deployReceiverPod() {
 					Image: pkgTest.ImagePath(receiverName),
 					VolumeMounts: []corev1.VolumeMount{
 						{
-							Name:      p.config.Wathola.Config.Name,
+							Name:      p.config.ConfigMapName,
 							ReadOnly:  true,
-							MountPath: p.config.Wathola.Config.MountPoint,
+							MountPath: p.config.ConfigMountPoint,
 						},
 					},
 					ReadinessProbe: &corev1.Probe{
 						Handler: corev1.Handler{
 							HTTPGet: &corev1.HTTPGetAction{
-								Path: p.config.Wathola.HealthEndpoint,
+								Path: p.config.HealthEndpoint,
 								Port: intstr.FromInt(watholaconfig.DefaultReceiverPort),
 							},
 						},
