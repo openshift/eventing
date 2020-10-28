@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # shellcheck disable=SC1090
-source "$(dirname "$0")/../vendor/knative.dev/test-infra/scripts/e2e-tests.sh"
+source "$(dirname "$0")/../vendor/knative.dev/hack/e2e-tests.sh"
 source "$(dirname "$0")/e2e-common.sh"
 
 set -Eeuox pipefail
