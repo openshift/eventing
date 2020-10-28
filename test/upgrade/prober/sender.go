@@ -37,10 +37,12 @@ func (p *prober) deploySender() {
 		Spec: corev1.PodSpec{
 			Volumes: []corev1.Volume{
 				{
-					Name: configName,
+					Name: p.config.Wathola.Config.Name,
 					VolumeSource: corev1.VolumeSource{
 						ConfigMap: &corev1.ConfigMapVolumeSource{
-							LocalObjectReference: corev1.LocalObjectReference{Name: configName},
+							LocalObjectReference: corev1.LocalObjectReference{
+								Name: p.config.Wathola.Config.Name,
+							},
 						},
 					},
 				},
@@ -51,9 +53,9 @@ func (p *prober) deploySender() {
 					Image: pkgTest.ImagePath(senderName),
 					VolumeMounts: []corev1.VolumeMount{
 						{
-							Name:      configName,
+							Name:      p.config.Wathola.Config.Name,
 							ReadOnly:  true,
-							MountPath: configMountPoint,
+							MountPath: p.config.Wathola.Config.MountPoint,
 						},
 					},
 				},

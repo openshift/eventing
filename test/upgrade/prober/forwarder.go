@@ -34,7 +34,7 @@ var (
 func (p *prober) deployForwarder() {
 	p.log.Infof("Deploy forwarder knative service: %v", forwarderName)
 	serving := p.client.Dynamic.Resource(resources.KServicesGVR).Namespace(p.client.Namespace)
-	service := forwarderKService(forwarderName, p.client.Namespace)
+	service := p.forwarderKService(forwarderName, p.client.Namespace)
 	_, err := serving.Create(service, metav1.CreateOptions{})
 	ensure.NoError(err)
 
@@ -59,7 +59,7 @@ func (p *prober) removeForwarder() {
 	ensure.NoError(err)
 }
 
-func forwarderKService(name, namespace string) *unstructured.Unstructured {
+func (p *prober) forwarderKService(name, namespace string) *unstructured.Unstructured {
 	obj := map[string]interface{}{
 		"apiVersion": resources.KServiceType.APIVersion,
 		"kind":       resources.KServiceType.Kind,
@@ -77,20 +77,20 @@ func forwarderKService(name, namespace string) *unstructured.Unstructured {
 						"name":  "forwarder",
 						"image": pkgTest.ImagePath(forwarderName),
 						"volumeMounts": []map[string]interface{}{{
-							"name":      configName,
-							"mountPath": configMountPoint,
+							"name":      p.config.Wathola.Config.Name,
+							"mountPath": p.config.Wathola.Config.MountPoint,
 							"readOnly":  true,
 						}},
 						"readinessProbe": map[string]interface{}{
 							"httpGet": map[string]interface{}{
-								"path": healthEndpoint,
+								"path": p.config.Wathola.HealthEndpoint,
 							},
 						},
 					}},
 					"volumes": []map[string]interface{}{{
-						"name": configName,
+						"name": p.config.Wathola.Config.Name,
 						"configMap": map[string]interface{}{
-							"name": configName,
+							"name": p.config.Wathola.Config.Name,
 						},
 					}},
 				},
