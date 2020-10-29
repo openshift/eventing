@@ -36,6 +36,7 @@ EventSource ---> Channel ---> Subscription ---> Channel ---> Subscription ----> 
                                    -----------> Service(Transformation)
 */
 func TestEventTransformationForSubscription(t *testing.T) {
+	t.Skip("sometimes flaking")
 	helpers.EventTransformationForSubscriptionTestHelper(t, helpers.SubscriptionV1beta1, channelTestRunner)
 }
 
