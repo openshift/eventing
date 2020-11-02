@@ -32,6 +32,7 @@ EventSource ---> Channel ---> Subscriptions ---> Channel ---> Subscriptions --->
 
 */
 func TestChannelChainV1beta1(t *testing.T) {
+        t.Skip("upstream flake")
 	helpers.ChannelChainTestHelper(context.Background(), t, helpers.SubscriptionV1beta1, channelTestRunner)
 }
 
