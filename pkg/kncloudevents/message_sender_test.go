@@ -19,7 +19,6 @@ package kncloudevents
 import (
 	"context"
 	"net"
-	"net/http"
 	nethttp "net/http"
 	"net/http/httptest"
 	"sync/atomic"
@@ -241,9 +240,9 @@ func TestRetriesOnNetworkErrors(t *testing.T) {
 				l, err := net.Listen("tcp", target)
 				assert.Nil(t, err)
 
-				s := httptest.NewUnstartedServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+				s := httptest.NewUnstartedServer(nethttp.HandlerFunc(func(writer nethttp.ResponseWriter, request *nethttp.Request) {
 					if n-1 != nCalls {
-						writer.WriteHeader(http.StatusServiceUnavailable)
+						writer.WriteHeader(nethttp.StatusServiceUnavailable)
 						return
 					}
 				}))
@@ -268,14 +267,14 @@ func TestRetriesOnNetworkErrors(t *testing.T) {
 
 	checkRetry := r.CheckRetry
 
-	r.CheckRetry = func(ctx context.Context, resp *http.Response, err error) (bool, error) {
+	r.CheckRetry = func(ctx context.Context, resp *nethttp.Response, err error) (bool, error) {
 		calls <- struct{}{}
 		<-cont
 
 		return checkRetry(ctx, resp, err)
 	}
 
-	req, err := http.NewRequest("POST", "http://"+target, nil)
+	req, err := nethttp.NewRequest("POST", "http://"+target, nil)
 	assert.Nil(t, err)
 
 	sender, err := NewHttpMessageSender(nil, "")
