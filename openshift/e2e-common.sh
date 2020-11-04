@@ -192,7 +192,7 @@ function run_e2e_tests(){
   oc -n knative-eventing set env deployment/mt-broker-controller BROKER_INJECTION_DEFAULT=true || return 1
   wait_until_pods_running $EVENTING_NAMESPACE || return 2
 
-  go_test_e2e -timeout=90m -parallel=20 ./test/e2e \
+  go_test_e2e -timeout=30m -parallel=20 ./test/e2e \
     "$run_command" \
     -brokerclass=MTChannelBasedBroker \
     $common_opts || failed=$?
@@ -218,7 +218,7 @@ function run_conformance_tests(){
   oc -n knative-eventing set env deployment/mt-broker-controller BROKER_INJECTION_DEFAULT=true || return 1
   wait_until_pods_running $EVENTING_NAMESPACE || return 2
 
-  go_test_e2e -timeout=90m -parallel=12 ./test/conformance \
+  go_test_e2e -timeout=30m -parallel=12 ./test/conformance \
     "$run_command" \
     -brokerclass=MTChannelBasedBroker \
     $common_opts || failed=$?
