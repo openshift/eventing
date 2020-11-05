@@ -10,6 +10,7 @@ TEST=
 IMAGE=
 
 # Guess location of openshift/release repo. NOTE: override this if it is not correct.
+# TIP: https://stackoverflow.com/a/29434812/844449
 OPENSHIFT=${CURDIR}/../../github.com/openshift/release
 
 install:
