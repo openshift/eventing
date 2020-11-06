@@ -10,6 +10,9 @@ export TEST_IMAGE_TEMPLATE="${IMAGE_FORMAT//\$\{component\}/knative-eventing-tes
 
 env
 
+# Compile the entire repo to make sure it succeeds.
+go test -run ^$ ./... || exit 1
+
 scale_up_workers || exit 1
 
 failed=0
