@@ -34,7 +34,7 @@ var (
 // Prober is the interface for a prober, which checks the result of the probes when stopped.
 type Prober interface {
 	// Verify will verify prober state after finished has been send
-	Verify(ctx context.Context) ([]error, int)
+	Verify() ([]error, int)
 
 	// Finish send finished event
 	Finish()
@@ -61,7 +61,7 @@ func AssertEventProber(t *testing.T, prober Prober) {
 
 	waitAfterFinished(prober)
 
-	errors, events := prober.Verify(ctx)
+	errors, events := prober.Verify()
 	if len(errors) == 0 {
 		t.Logf("All %d events propagated well", events)
 	} else {
