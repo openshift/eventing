@@ -135,8 +135,8 @@ function install_serverless(){
   local failed=0
   git clone --branch release-1.10 https://github.com/openshift-knative/serverless-operator.git $operator_dir
   cp openshift/serverless.bash $operator_dir/hack/lib/serverless.bash
-  # unset OPENSHIFT_BUILD_NAMESPACE as its used in serverless-operator's CI environment as a switch
-  # to use CI built images, we want pre-built images of k-s-o and k-o-i
+  # unset OPENSHIFT_BUILD_NAMESPACE (old CI) and OPENSHIFT_CI (new CI) as its used in serverless-operator's CI
+  # environment as a switch to use CI built images, we want pre-built images of k-s-o and k-o-i
   unset OPENSHIFT_BUILD_NAMESPACE
   unset OPENSHIFT_CI
   pushd $operator_dir
