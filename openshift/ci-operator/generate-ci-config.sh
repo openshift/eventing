@@ -33,14 +33,30 @@ binary_build_commands: make install
 test_binary_build_commands: make test-install
 tests:
 - as: e2e-aws-ocp-${openshift//./}
-  commands: "make test-e2e"
-  openshift_installer_src:
+  steps:
     cluster_profile: aws
+    test:
+    - as: test
+      cli: latest
+      commands: make test-e2e
+      from: src
+      resources:
+        requests:
+          cpu: 100m
+    workflow: ipi-aws
 - as: e2e-aws-ocp-${openshift//./}-continuous
-  commands: make test-e2e
   cron: 0 */12 * * 1-5
-  openshift_installer_src:
+  steps:
     cluster_profile: aws
+    test:
+    - as: test
+      cli: latest
+      commands: make test-e2e
+      from: src
+      resources:
+        requests:
+          cpu: 100m
+    workflow: ipi-aws
 resources:
   '*':
     limits:
