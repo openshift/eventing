@@ -4184,6 +4184,7 @@ spec:
           image: registry.svc.ci.openshift.org/openshift/knative-v0.18.4:knative-eventing-mtping
           env:
             - name: SYSTEM_NAMESPACE
+              value: ''
               valueFrom:
                 fieldRef:
                   apiVersion: v1
