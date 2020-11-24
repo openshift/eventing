@@ -30,3 +30,7 @@ rm crd-channel-resolved.yaml
 # the MT Broker:
 output_file="openshift/release/knative-eventing-mtbroker-ci.yaml"
 resolve_resources config/brokers/mt-channel-broker/ $output_file $image_prefix $tag
+
+# the Chaosduck:
+output_file="openshift/release/knative-eventing-chaosduck-ci.yaml"
+resolve_resources test/config/chaosduck $output_file $image_prefix $tag

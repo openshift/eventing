@@ -5,6 +5,8 @@ export SYSTEM_NAMESPACE=$EVENTING_NAMESPACE
 export ZIPKIN_NAMESPACE=$EVENTING_NAMESPACE
 export KNATIVE_DEFAULT_NAMESPACE=$EVENTING_NAMESPACE
 export CONFIG_TRACING_CONFIG="test/config/config-tracing.yaml"
+export CONFIG_LOGGING_CONFIG="test/config/config-logging.yaml"
+export CHAOSDUCK="openshift/release/knative-eventing-chaosduck-ci.yaml"
 
 function scale_up_workers(){
   local cluster_api_ns="openshift-machine-api"
@@ -126,6 +128,14 @@ data:
   sample-rate: "1.0"
   debug: "true"
 EOF
+}
+
+function unleash_duck() {
+  echo "enable debug logging"
+  oc apply -f ${CONFIG_LOGGING_CONFIG}
+
+  echo "unleash the duck"
+  oc apply -f ${CHAOSDUCK}
 }
 
 function install_serverless(){
