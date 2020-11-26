@@ -21,6 +21,26 @@ CONFIG=$CONFIGDIR/openshift-knative-eventing-release-$VERSION
 CURDIR=$(dirname $0)
 $CURDIR/generate-ci-config.sh knative-$VERSION 4.6 > ${CONFIG}__46.yaml
 
+# Append missing lines to the mirror file.
+VER=$(echo $VERSION | sed 's/\./_/;s/\.[0-9]\+$//') # X_Y form of version
+MIRROR="$OPENSHIFT/core-services/image-mirroring/knative/mapping_knative_${VER}_quay"
+[ -n "$(tail -c1 $MIRROR)" ] && echo >> $MIRROR # Make sure there's a newline
+test_images=$(find ./openshift/ci-operator/knative-test-images -mindepth 1 -maxdepth 1 -type d | LC_COLLATE=posix sort)
+for IMAGE in $test_images; do
+    NAME=knative-eventing-test-$(basename $IMAGE | sed 's/_/-/' | sed 's/_/-/' | sed 's/[_.]/-/' | sed 's/[_.]/-/' | sed 's/v0/upgrade-v0/')
+
+    echo "Adding $NAME to mirror file as $VERSION tag"
+    LINE="registry.svc.ci.openshift.org/openshift/knative-$VERSION:$NAME quay.io/openshift-knative/$NAME:$VERSION"
+    # Add $LINE if not already present
+    grep -q "^$LINE\$" $MIRROR || echo "$LINE"  >> $MIRROR
+
+    VER=$(echo $VER | sed 's/\_/./')
+    echo "Adding $NAME to mirror file as $VER tag"
+    LINE="registry.svc.ci.openshift.org/openshift/knative-$VERSION:$NAME quay.io/openshift-knative/$NAME:$VER"
+    # Add $LINE if not already present
+    grep -q "^$LINE\$" $MIRROR || echo "$LINE"  >> $MIRROR
+done
+
 # Switch to openshift/release to generate PROW files
 cd $OPENSHIFT
 echo "Generating PROW files in $OPENSHIFT"
@@ -29,4 +49,3 @@ make ci-operator-config
 echo "==== Changes made to $OPENSHIFT ===="
 git status
 echo "==== Commit changes to $OPENSHIFT and create a PR"
-
