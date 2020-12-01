@@ -14,7 +14,7 @@ scale_up_workers || exit 1
 
 failed=0
 
-(( !failed )) && install_serverless || failed=1
+(( !failed )) && install_knative_serving_branch "${SERVING_BRANCH}" || failed=1
 
 (( !failed )) && install_knative_eventing || failed=1
 
