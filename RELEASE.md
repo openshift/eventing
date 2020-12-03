@@ -1,8 +1,13 @@
-# Crafting a new release
+# Preparing a midstream release branch
 
-## Create a release branch for openshift/knative-eventing repo:
+To create a release branch for openshift/knative-eventing repo, you need to run a few steps
 
-* Check that a remote reference to openshift and upstream exists
+## Steps on the midstream repo
+
+### Check that a remote reference to openshift and upstream exists
+
+Like:
+
 ```bash
 $ git remote -v | grep -e 'openshift\|upstream'
 openshift	git@github.com:openshift/knative-eventing.git (fetch)
@@ -11,41 +16,42 @@ upstream	https://github.com/knative/eventing.git (fetch)
 upstream	https://github.com/knative/eventing.git (push)
 ```
 
-* Create a new release branch which points to upstream release branch + OpenShift specific files:
+### Create a new release branch which points to upstream release branch + OpenShift specific files:
 ```bash
 # Create a new release branch. Parameters are the upstream release tag
 # and the name of the branch to create
 # Usage: ./create-release-branch.sh <upstream-tag> <downstream-release-branch>
 # <upstream-tag>: The tag referring the upstream release
 # <downstream-release-branch>: Name of the release branch to create
+
+
 $ ./create-release-branch.sh v0.15.0 release-v0.15.0
 ```
 
-* Update the references to the CI release yaml files, matching the newly created branch:
 
-Replace [this line](https://github.com/matzew/eventing/blob/valid_ci_generation/openshift/olm/knative-eventing.catalogsource.yaml#L698), with something like:
-
-```yaml
-                        - --filename=https://raw.githubusercontent.com/openshift/knative-eventing/release-v0.15.0/openshift/release/knative-eventing-ci.yaml,https://raw.githubusercontent.com/openshift/knative-eventing/release-v0.15.0/openshift/release/knative-eventing-channelbroker-ci.yaml,https://raw.githubusercontent.com/openshift/knative-eventing/release-v0.15.0/openshift/release/knative-eventing-mtbroker-ci.yaml
-```
-
-
-* Push the new release branch:
+### Push the new release branch:
 ```bash
 # Push release branch to openshift/knative-eventing repo
 $ git push openshift release-v0.14.0
 ```
 
-## Create a ci-operator configuration, prow job configurations and image mirroring config:
+### Create a ci-operator configuration, prow job configurations and image mirroring config:
 
 * Create a fork and clone of https://github.com/openshift/release into your `$GOPATH`
 * On your `openshift/knative-eventing` root folder, run:
+
 ```bash
 # Invoke CI config generation, and mirroring images
+
 make update-ci
 ```
 
-## Create a PR against openshift/release repo for CI setup of release branch using configs generated above:
+## Steps on the `openshift/release` repo:
+
+The above `make update-ci` adds new CI configs that need to be PR'ed
+
+## Create a PR against openshift/release repo
+
 ```bash
 # Verify the changes
 $ git status
@@ -77,10 +83,6 @@ $ git push
 # Once PR against openshift/release repo is merged, the CI is setup for release-branch
 ```
 
-## Once the changes to release branch is finalized, and we are ready for QA, create tag and push:
-```bash
-$ git tag openshift-v0.14.0
-$ git push openshift openshift-v0.14.0
-```
+If there are now major changes, that should be it - you are done.
 
 Note: Notify any changes required for this release, for e.g.: new commands, commands output update, etc. to docs team.
