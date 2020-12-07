@@ -4168,7 +4168,7 @@ metadata:
   labels:
     eventing.knative.dev/release: devel
 spec:
-  replicas: 0
+  replicas: 1
   selector:
     matchLabels:
       eventing.knative.dev/source: ping-source-controller
@@ -4199,7 +4199,7 @@ spec:
             - name: K_NO_SHUTDOWN_AFTER
               value: ''
             - name: K_SINK_TIMEOUT
-              value: ''
+              value: '-1'
             - name: POD_NAME
               valueFrom:
                 fieldRef:
