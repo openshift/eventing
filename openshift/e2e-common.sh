@@ -176,8 +176,11 @@ function install_knative_eventing(){
 function uninstall_knative_eventing(){
   header "Uninstalling Knative Eventing"
 
-  oc delete -f openshift/release/knative-eventing-mtbroker-ci.yaml || return 1
-  oc delete -f openshift/release/knative-eventing-ci.yaml || return 1
+  cat openshift/release/knative-eventing-ci.yaml > ci
+  cat openshift/release/knative-eventing-mtbroker-ci.yaml >> ci
+
+  oc delete -f ci --ignore-not-found=true || return 1
+  rm ci
 }
 
 function run_e2e_tests(){
