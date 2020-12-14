@@ -24,6 +24,8 @@ failed=0
 
 (( !failed )) && run_conformance_tests || failed=1
 
+(( !failed )) && uninstall_knative_eventing || failed=1
+
 (( failed )) && dump_cluster_state
 
 (( failed )) && exit 1

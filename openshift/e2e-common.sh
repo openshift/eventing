@@ -161,7 +161,7 @@ function install_knative_eventing(){
   sed -i -e "s|registry.svc.ci.openshift.org/openshift/knative-.*:knative-eventing-mtchannel-broker|${IMAGE_FORMAT//\$\{component\}/knative-eventing-mtchannel-broker}|g"                   ci
   sed -i -e "s|registry.svc.ci.openshift.org/openshift/knative-.*:knative-eventing-sugar-controller|${IMAGE_FORMAT//\$\{component\}/knative-eventing-sugar-controller}|g"                   ci
 
-  oc apply -f ci
+  oc apply -f ci || return 1
   rm ci
 
   # Wait for 5 pods to appear first
@@ -171,6 +171,16 @@ function install_knative_eventing(){
   # Assert that there are no images used that are not CI images (which should all be using the $INTERNAL_REGISTRY)
   # (except for the knative-eventing-operator)
   #oc get pod -n knative-eventing -o yaml | grep image: | grep -v knative-eventing-operator | grep -v ${INTERNAL_REGISTRY} && return 1 || true
+}
+
+function uninstall_knative_eventing(){
+  header "Uninstalling Knative Eventing"
+
+  cat openshift/release/knative-eventing-ci.yaml > ci
+  cat openshift/release/knative-eventing-mtbroker-ci.yaml >> ci
+
+  oc delete -f ci --ignore-not-found=true || return 1
+  rm ci
 }
 
 function run_e2e_tests(){
