@@ -4,12 +4,11 @@ This repository holds Openshift's fork of
 [`knative/eventing`](https://github.com/knative/eventing) with additions and
 fixes needed only for the OpenShift side of things.
 
-## List of releases
+## List of recent releases
 
-- (old) [release-0.2](https://github.com/openshift/knative-eventing/tree/release-0.2)
-- (old) [release-0.3](https://github.com/openshift/knative-eventing/tree/release-0.3)
-- [release-v0.4.1](https://github.com/openshift/knative-eventing/tree/release-v0.4.1)
-- [release-v0.5.0](https://github.com/openshift/knative-eventing/tree/release-v0.5.0)
+- [release-v0.20.0](https://github.com/openshift/knative-eventing/tree/release-v0.20.0)
+- [release-v0.19.2](https://github.com/openshift/knative-eventing/tree/release-v0.19.2)
+- [release-v0.18.6](https://github.com/openshift/knative-eventing/tree/release-v0.18.6)
 
 ## How this repository works ?
 
