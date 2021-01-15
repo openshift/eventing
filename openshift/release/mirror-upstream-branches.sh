@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 
-# Checks if there is a branch upstream, without a matching downstream
-# one, create it
+# Usage: openshift/release/mirror-upstream-branches.sh
+# This should be run from the basedir of the repo with no arguments
+
 
 set -e
 readonly TMPDIR=$(mktemp -d knativeEventingBranchingCheckXXXX -p /tmp/)
