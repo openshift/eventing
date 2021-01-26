@@ -55,6 +55,43 @@ make update-ci VERSION=X.Y.Z
 This creates and modifies files in the openshift/release repo, verify that those files
 are as expected, commit and create a PR for them. That will start a CI job.
 
+## Add/Verify periodic reporter_config
+
+In the `openshift/release` periodic files, we need to add/verify that
+the reporter config for slack has been added.  There is a
+`reporter_config` per OCP release.
+
+For example, for `knative-eventing-v0.20.0` we added two `reporter_config`'s to 
+`ci-operator/jobs/openshift/knative-eventing/openshift-knative-eventing-release-v0.20.0-periodics.yaml`
+
+``` yaml
+  name: periodic-ci-openshift-knative-eventing-release-v0.20.0-47-e2e-aws-ocp-47-continuous
+  reporter_config:
+    slack:
+      channel: '#knative-eventing'
+      job_states_to_report:
+      - success
+      - failure
+      - error
+      report_template: '{{if eq .Status.State "success"}} :rainbow: Job *{{.Spec.Job}}* ended with *{{.Status.State}}*. <{{.Status.URL}}|View logs> :rainbow: {{else}} :volcano: Job *{{.Spec.Job}}* ended with *{{.Status.State}}*. <{{.Status.URL}}|View logs> :volcano: {{end}}'
+```
+
+and
+
+``` yaml
+  name: periodic-ci-openshift-knative-eventing-release-v0.20.0-46-e2e-aws-ocp-46-continuous
+  reporter_config:
+    slack:
+      channel: '#knative-eventing'
+      job_states_to_report:
+      - success
+      - failure
+      - error
+      report_template: '{{if eq .Status.State "success"}} :rainbow: Job *{{.Spec.Job}}* ended with *{{.Status.State}}*. <{{.Status.URL}}|View logs> :rainbow: {{else}} :volcano: Job *{{.Spec.Job}}* ended with *{{.Status.State}}*. <{{.Status.URL}}|View logs> :volcano: {{end}}'
+```
+
+Add these if needed.
+
 ## Update this README
 
 If you find that any of the steps are incorrect or out of date.
