@@ -66,7 +66,7 @@ make ci-operator-config
 echon "==== Adding reporter_config to periodics ===="
 # These version MUST match the ocp version we used above
 for OCP_VERSION in 46 47; do
-    sed -i "/  name: periodic-ci-openshift-knative-eventing-release-${VERSION}-${OCP_VERSION}-e2e-aws-ocp-${OCP_VERSION}-continuous/ r $TMPDIR/reporterConfig" "$PERIODIC_CONFIG"
+    sed -i "/  name: periodic-ci-openshift-knative-eventing-release-${VERSION}-${OCP_VERSION}-e2e-aws-ocp-${OCP_VERSION}-continuous\n  spec:/ r $TMPDIR/reporterConfig" "$PERIODIC_CONFIG"
 done
 echo "==== Changes made to $OPENSHIFT ===="
 git status
