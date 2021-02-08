@@ -1,0 +1,12 @@
+diff --git a/test/e2e/broker_with_many_triggers_test.go b/test/e2e/broker_with_many_triggers_test.go
+index 46d650a29..6db7769ff 100644
+--- a/test/e2e/broker_with_many_triggers_test.go
++++ b/test/e2e/broker_with_many_triggers_test.go
+@@ -40,6 +40,7 @@ func TestDefaultBrokerWithManyTriggers(t *testing.T) {
+ }
+ 
+ func TestChannelBasedBrokerWithManyTriggers(t *testing.T) {
++	t.Skip("Flake on OCP 4.7")
+ 	channelTestRunner.RunTests(t, testlib.FeatureBasic, func(t *testing.T, channel metav1.TypeMeta) {
+ 		for _, version := range unsupportedChannelVersions {
+ 			if strings.HasSuffix(channel.APIVersion, version) {
