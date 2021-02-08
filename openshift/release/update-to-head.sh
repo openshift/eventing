@@ -6,6 +6,9 @@
 set -e
 REPO_NAME=`basename $(git rev-parse --show-toplevel)`
 
+# Check if there's an upstream release we need to mirror downstream
+openshift/release/mirror-upstream-branches.sh
+
 # Reset release-next to upstream/master.
 git fetch upstream master
 git checkout upstream/master -B release-next
