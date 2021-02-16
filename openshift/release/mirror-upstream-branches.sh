@@ -6,7 +6,9 @@
 
 set -e
 readonly TMPDIR=$(mktemp -d knativeEventingBranchingCheckXXXX -p /tmp/)
+echo "fetching upstream refs"
 git fetch upstream
+echo "fetching openshift refs"
 git fetch openshift
 
 # We need to seed this with a few releases that, otherwise, would make
@@ -16,7 +18,9 @@ cat >> "$TMPDIR"/midstream_branches <<EOF
 0.3
 EOF
 
+echo "getting a list of upstream branches"
 git branch -l -r "upstream/release-0.*" | cut -f2 -d'/' | cut -f2 -d'-' > "$TMPDIR"/upstream_branches
+echo "getting a list of midstream branches"
 git branch -l -r "openshift/release-v0.*" | cut -f2 -d'/' | cut -f2 -d'v' | rev | cut -f2- -d'.' | rev >> "$TMPDIR"/midstream_branches
 
 sort -o "$TMPDIR"/midstream_branches "$TMPDIR"/midstream_branches
@@ -28,7 +32,7 @@ if [ -z "$UPSTREAM_BRANCH" ]; then
     echo "no new branch, exiting"
     exit 0
 fi
-
+echo "found upstream branch: $UPSTREAM_BRANCH"
 readonly UPSTREAM_TAG="v$UPSTREAM_BRANCH.0"
 readonly MIDSTREAM_BRANCH="release-v$UPSTREAM_BRANCH.0"
 openshift/release/create-release-branch.sh "$UPSTREAM_TAG" "$MIDSTREAM_BRANCH"
