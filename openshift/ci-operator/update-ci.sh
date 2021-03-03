@@ -34,7 +34,6 @@ test -d "$PERIODIC_CONFIGDIR" || fail "'$PERIODIC_CONFIGDIR' is not a directory"
 CONFIG=$CONFIGDIR/openshift-knative-eventing-release-$VERSION
 PERIODIC_CONFIG=$PERIODIC_CONFIGDIR/openshift-knative-eventing-release-$VERSION-periodics.yaml
 CURDIR=$(dirname $0)
-$CURDIR/generate-ci-config.sh knative-$VERSION 4.6 > ${CONFIG}__46.yaml
 $CURDIR/generate-ci-config.sh knative-$VERSION 4.7 true > ${CONFIG}__47.yaml
 
 # Append missing lines to the mirror file.
@@ -65,7 +64,7 @@ make ci-operator-config
 # We have to do this manually, see: https://docs.ci.openshift.org/docs/how-tos/notification/
 echo "==== Adding reporter_config to periodics ===="
 # These version MUST match the ocp version we used above
-for OCP_VERSION in 46 47; do
+for OCP_VERSION in 47; do
     sed -i "/  name: periodic-ci-openshift-knative-eventing-release-${VERSION}-${OCP_VERSION}-e2e-aws-ocp-${OCP_VERSION}-continuous\n  spec:/ r $TMPDIR/reporterConfig" "$PERIODIC_CONFIG"
 done
 echo "==== Changes made to $OPENSHIFT ===="
