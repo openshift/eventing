@@ -34,7 +34,7 @@ test -d "$PERIODIC_CONFIGDIR" || fail "'$PERIODIC_CONFIGDIR' is not a directory"
 CONFIG=$CONFIGDIR/openshift-knative-eventing-release-$VERSION
 PERIODIC_CONFIG=$PERIODIC_CONFIGDIR/openshift-knative-eventing-release-$VERSION-periodics.yaml
 CURDIR=$(dirname $0)
-$CURDIR/generate-ci-config.sh knative-$VERSION 4.7 true > ${CONFIG}__47.yaml
+$CURDIR/generate-ci-config.sh knative-$VERSION 4.7 > ${CONFIG}__47.yaml
 
 # Append missing lines to the mirror file.
 VER=$(echo $VERSION | sed 's/\./_/;s/\.[0-9]\+$//') # X_Y form of version
