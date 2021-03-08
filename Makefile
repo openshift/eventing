@@ -16,8 +16,8 @@ install:
 	for img in $(CORE_IMAGES); do \
 		go install $$img ; \
 	done
-	go build -o $(GOPATH)/bin/mtbroker_ingress ./cmd/mtbroker/ingress/
-	go build -o $(GOPATH)/bin/mtbroker_filter ./cmd/mtbroker/filter/
+	go build -o $(GOPATH)/bin/mtbroker_ingress ./cmd/broker/ingress/
+	go build -o $(GOPATH)/bin/mtbroker_filter ./cmd/broker/filter/
 .PHONY: install
 
 test-install:
