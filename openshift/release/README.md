@@ -104,6 +104,6 @@ This is done via the nightly Jenkins job to create the release-next branch:
 ./openshift/release/update-to-head.sh release-vX.Y.Z
 ```
 
-This pulls the latest master from upstream, rebase the current fixes on the
+This pulls the latest main from upstream, rebase the current fixes on the
 release-vX.Y.Z branch and updates the Openshift specific files if necessary.
 
