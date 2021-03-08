@@ -2,7 +2,7 @@
 
 **Note 1** Run all scripts from the root of the repository.
 
-**Note 2** The master branch in this repo is used as a stash for
+**Note 2** The main branch in this repo is used as a stash for
 openshift-specific files needed for CI. Those files are copied to release
 branches which is where CI operates.
 
@@ -20,7 +20,7 @@ git remote add upstream git@github.com:knative/eventing.git
 ```
 
 ## Branching
-**On the master branch** create a release branch and then push it upstream:
+**On the main branch** create a release branch and then push it upstream:
 
 ```bash
 ./openshift/release/create-release-branch.sh vX.Y.Z release-vX.Y.Z
