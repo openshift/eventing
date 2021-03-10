@@ -7,10 +7,10 @@ release=$1
 output_file="openshift/release/knative-eventing-ci.yaml"
 
 if [ "$release" == "ci" ]; then
-    image_prefix="registry.svc.ci.openshift.org/openshift/knative-nightly:knative-eventing-"
+    image_prefix="registry.ci.openshift.org/openshift/knative-nightly:knative-eventing-"
     tag=""
 else
-    image_prefix="registry.svc.ci.openshift.org/openshift/knative-${release}:knative-eventing-"
+    image_prefix="registry.ci.openshift.org/openshift/knative-${release}:knative-eventing-"
     tag=""
 fi
 
