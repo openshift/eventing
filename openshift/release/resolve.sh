@@ -20,8 +20,8 @@ function resolve_resources(){
     # 4. Remove empty lines
     sed -e "s+\(.* image: \)\(knative.dev\)\(.*/\)\(test/\)\(.*\)+\1\2 \3\4test-\5+g" \
         -e "s+ko://++" \
-        -e "s+knative.dev/eventing/cmd/broker/ingress+${image_prefix}ingress${image_tag}+" \
-        -e "s+knative.dev/eventing/cmd/broker/filter+${image_prefix}filter${image_tag}+" \
+        -e "s+knative.dev/eventing/cmd/broker/ingress+${image_prefix}mtbroker-ingress${image_tag}+" \
+        -e "s+knative.dev/eventing/cmd/broker/filter+${image_prefix}mtbroker-filter${image_tag}+" \
         -e "s+knative.dev/eventing/cmd/mtbroker/ingress+${image_prefix}mtbroker-ingress${image_tag}+" \
         -e "s+knative.dev/eventing/cmd/mtbroker/filter+${image_prefix}mtbroker-filter${image_tag}+" \
         -e "s+knative.dev/eventing/cmd/mtchannel_broker+${image_prefix}mtchannel-broker${image_tag}+" \
