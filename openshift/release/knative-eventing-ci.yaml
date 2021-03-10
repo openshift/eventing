@@ -4328,7 +4328,7 @@ spec:
       containers:
       - name: eventing-controller
         terminationMessagePolicy: FallbackToLogsOnError
-        image: registry.svc.ci.openshift.org/openshift/knative-v0.20.0:knative-eventing-controller
+        image: registry.ci.openshift.org/openshift/knative-v0.20.0:knative-eventing-controller
         resources:
           requests:
             cpu: 100m
@@ -4345,7 +4345,7 @@ spec:
           - name: METRICS_DOMAIN
             value: knative.dev/eventing
           - name: APISERVER_RA_IMAGE
-            value: registry.svc.ci.openshift.org/openshift/knative-v0.20.0:knative-eventing-apiserver-receive-adapter
+            value: registry.ci.openshift.org/openshift/knative-v0.20.0:knative-eventing-apiserver-receive-adapter
           - name: POD_NAME
             valueFrom:
               fieldRef:
@@ -4380,7 +4380,7 @@ spec:
     spec:
       containers:
         - name: dispatcher
-          image: registry.svc.ci.openshift.org/openshift/knative-v0.20.0:knative-eventing-mtping
+          image: registry.ci.openshift.org/openshift/knative-v0.20.0:knative-eventing-mtping
           env:
             - name: SYSTEM_NAMESPACE
               value: ''
@@ -4525,7 +4525,7 @@ spec:
       containers:
       - name: eventing-webhook
         terminationMessagePolicy: FallbackToLogsOnError
-        image: registry.svc.ci.openshift.org/openshift/knative-v0.20.0:knative-eventing-webhook
+        image: registry.ci.openshift.org/openshift/knative-v0.20.0:knative-eventing-webhook
         resources:
           requests:
             cpu: 20m
@@ -4696,7 +4696,7 @@ spec:
       serviceAccountName: eventing-controller
       containers:
       - name: controller
-        image: registry.svc.ci.openshift.org/openshift/knative-v0.20.0:knative-eventing-sugar-controller
+        image: registry.ci.openshift.org/openshift/knative-v0.20.0:knative-eventing-sugar-controller
         env:
           - name: CONFIG_LOGGING_NAME
             value: config-logging
@@ -5048,7 +5048,7 @@ spec:
       serviceAccountName: imc-controller
       containers:
       - name: controller
-        image: registry.svc.ci.openshift.org/openshift/knative-v0.20.0:knative-eventing-channel-controller
+        image: registry.ci.openshift.org/openshift/knative-v0.20.0:knative-eventing-channel-controller
         env:
           - name: CONFIG_LOGGING_NAME
             value: config-logging
@@ -5061,7 +5061,7 @@ spec:
               fieldRef:
                 fieldPath: metadata.namespace
           - name: DISPATCHER_IMAGE
-            value: registry.svc.ci.openshift.org/openshift/knative-v0.20.0:knative-eventing-channel-dispatcher
+            value: registry.ci.openshift.org/openshift/knative-v0.20.0:knative-eventing-channel-dispatcher
           - name: POD_NAME
             valueFrom:
               fieldRef:
@@ -5102,7 +5102,7 @@ spec:
       serviceAccountName: imc-dispatcher
       containers:
       - name: dispatcher
-        image: registry.svc.ci.openshift.org/openshift/knative-v0.20.0:knative-eventing-channel-dispatcher
+        image: registry.ci.openshift.org/openshift/knative-v0.20.0:knative-eventing-channel-dispatcher
         readinessProbe: &probe
           failureThreshold: 3
           httpGet:
