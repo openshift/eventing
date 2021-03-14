@@ -4620,7 +4620,7 @@ spec:
         - name: WEBHOOK_PORT
           value: "8443"
         - name: SINK_BINDING_SELECTION_MODE
-          value: "exclusion"
+          value: "inclusion"
         - name: POD_NAME
           valueFrom:
             fieldRef:
