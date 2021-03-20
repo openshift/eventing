@@ -125,6 +125,7 @@ func TestSinkBindingV1Alpha2Deployment(t *testing.T) {
 }
 
 func TestSinkBindingV1Alpha2CronJob(t *testing.T) {
+	t.Skip("SRVKE-500: Skipping since we set bindings to inclusion")
 	const (
 		sinkBindingName = "e2e-sink-binding"
 		deploymentName  = "e2e-sink-binding-cronjob"
