@@ -1,15 +1,3 @@
-diff --git a/test/e2e/source_sinkbinding_v1alpha1_test.go b/test/e2e/source_sinkbinding_v1alpha1_test.go
-index 77e2bdb77..48b8116ad 100644
---- a/test/e2e/source_sinkbinding_v1alpha1_test.go
-+++ b/test/e2e/source_sinkbinding_v1alpha1_test.go
-@@ -121,6 +121,7 @@ func TestSinkBindingDeployment(t *testing.T) {
- }
- 
- func TestSinkBindingCronJob(t *testing.T) {
-+	t.Skip("SRVKE-500: Skipping since we set bindings to inclusion")
- 	const (
- 		sinkBindingName = "e2e-sink-binding"
- 		deploymentName  = "e2e-sink-binding-cronjob"
 diff --git a/test/e2e/source_sinkbinding_v1alpha2_test.go b/test/e2e/source_sinkbinding_v1alpha2_test.go
 index 8e8e0c037..9aa5cc9fb 100644
 --- a/test/e2e/source_sinkbinding_v1alpha2_test.go
