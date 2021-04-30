@@ -11,9 +11,9 @@ if [ -n "${TEMPLATE:-}" ]; then
 elif [ -n "${DOCKER_REPO_OVERRIDE:-}" ]; then
   export TEST_IMAGE_TEMPLATE="${DOCKER_REPO_OVERRIDE}/{{.Name}}"
 elif [ -n "${BRANCH:-}" ]; then
-  export TEST_IMAGE_TEMPLATE="registry.svc.ci.openshift.org/openshift/${BRANCH}:knative-eventing-test-{{.Name}}"
+  export TEST_IMAGE_TEMPLATE="registry.ci.openshift.org/openshift/${BRANCH}:knative-eventing-test-{{.Name}}"
 else
-  export TEST_IMAGE_TEMPLATE="registry.svc.ci.openshift.org/openshift/knative-nightly:knative-eventing-test-{{.Name}}"
+  export TEST_IMAGE_TEMPLATE="registry.ci.openshift.org/openshift/knative-nightly:knative-eventing-test-{{.Name}}"
 fi
 
 env
