@@ -75,6 +75,7 @@ function install_serverless(){
   # unset OPENSHIFT_BUILD_NAMESPACE as its used in serverless-operator's CI environment as a switch
   # to use CI built images, we want pre-built images of k-s-o and k-o-i
   unset OPENSHIFT_BUILD_NAMESPACE
+  unset OPENSHIFT_CI
   pushd $operator_dir
   ./hack/install.sh && header "Serverless Operator installed successfully" || failed=1
   popd
