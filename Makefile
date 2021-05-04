@@ -3,7 +3,7 @@
 CGO_ENABLED=0
 GOOS=linux
 CORE_IMAGES=$(shell find ./cmd -name main.go ! -path "./cmd/broker/*" ! -path "./cmd/mtbroker/*" | sed 's/main.go//') ./vendor/knative.dev/pkg/apiextensions/storageversion/cmd/migrate ./vendor/knative.dev/pkg/leaderelection/chaosduck
-TEST_IMAGES=$(shell find ./test/test_images -mindepth 1 -maxdepth 1 -type d)
+TEST_IMAGES=$(shell find ./test/test_images -mindepth 1 -maxdepth 1 -type d) ./vendor/knative.dev/reconciler-test/cmd/eventshub
 KO_DOCKER_REPO=${DOCKER_REPO_OVERRIDE}
 BRANCH=
 TEST=
