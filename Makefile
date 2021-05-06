@@ -30,6 +30,14 @@ test-e2e:
 	sh openshift/e2e-tests.sh
 .PHONY: test-e2e
 
+test-conformance:
+	sh openshift/e2e-conformance-tests.sh
+.PHONY: test-conformance
+
+test-reconciler:
+	sh openshift/e2e-rekt-tests.sh
+.PHONY: test-reconciler
+
 # Requires ko 0.2.0 or newer.
 test-images:
 	for img in $(TEST_IMAGES); do \
