@@ -22,8 +22,34 @@ resolve_resources config/sugar/ crd-sugar-resolved.yaml $image_prefix $tag
 cat crd-sugar-resolved.yaml >> $output_file
 rm crd-sugar-resolved.yaml
 
-# InMemoryChannel CRD
+# InMemoryChannel folders...
+# The root folder
 resolve_resources config/channels/in-memory-channel/ crd-channel-resolved.yaml $image_prefix $tag
+cat crd-channel-resolved.yaml >> $output_file
+rm crd-channel-resolved.yaml
+
+# The configmaps folder
+resolve_resources config/channels/in-memory-channel/configmaps crd-channel-resolved.yaml $image_prefix $tag
+cat crd-channel-resolved.yaml >> $output_file
+rm crd-channel-resolved.yaml
+
+# The deployments folder
+resolve_resources config/channels/in-memory-channel/deployments crd-channel-resolved.yaml $image_prefix $tag
+cat crd-channel-resolved.yaml >> $output_file
+rm crd-channel-resolved.yaml
+
+# The resources folder
+resolve_resources config/channels/in-memory-channel/resources crd-channel-resolved.yaml $image_prefix $tag
+cat crd-channel-resolved.yaml >> $output_file
+rm crd-channel-resolved.yaml
+
+# The roles folder
+resolve_resources config/channels/in-memory-channel/roles crd-channel-resolved.yaml $image_prefix $tag
+cat crd-channel-resolved.yaml >> $output_file
+rm crd-channel-resolved.yaml
+
+# The webhooks folder
+resolve_resources config/channels/in-memory-channel/webhooks crd-channel-resolved.yaml $image_prefix $tag
 cat crd-channel-resolved.yaml >> $output_file
 rm crd-channel-resolved.yaml
 
