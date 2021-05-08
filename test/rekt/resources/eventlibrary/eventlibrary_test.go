@@ -24,7 +24,7 @@ import (
 
 func Example() {
 	images := map[string]string{
-		"ko://knative.dev/eventing/test/test_images/event-library": "gcr.io/knative-samples/helloworld-go",
+		"registry.ci.openshift.org/openshift/knative-nightly:knative-eventing-test-event-library": "gcr.io/knative-samples/helloworld-go",
 	}
 	cfg := map[string]interface{}{
 		"name":      "foo",
