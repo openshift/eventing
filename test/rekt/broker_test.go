@@ -54,6 +54,7 @@ func TestBrokerAsMiddleware(t *testing.T) {
 
 // TestBrokerDLQ
 func TestBrokerWithDLQ(t *testing.T) {
+	t.Skip("skipping for test reasons...")
 	class := eventing.MTChannelBrokerClassValue
 
 	ctx, env := global.Environment(
