@@ -1,0 +1,83 @@
+From 98030ddb62e1330830cd912b3c46f1ac0454c78b Mon Sep 17 00:00:00 2001
+From: Lukas Berk <lberk@redhat.com>
+Date: Tue, 17 Nov 2020 22:09:57 -0500
+Subject: [PATCH] source.crd controller: filter out non duck crds (#980)
+
+knative.dev/pkg controller runtime doesn't allow for global level
+resync and leaderelection functions to filter out objects set by
+filter funcs.  In the case of the crd controller -- this means our
+reconciliation process picks up unrelated objets to try and create
+duck controllers.  Add an extra check in the reconcile process
+equivalent to the informer filterFunc
+---
+ pkg/reconciler/source/crd/crd.go      |  7 +++++++
+ pkg/reconciler/source/crd/crd_test.go | 21 ++++++++++++++++++---
+ 2 files changed, 25 insertions(+), 3 deletions(-)
+
+diff --git a/pkg/reconciler/source/crd/crd.go b/pkg/reconciler/source/crd/crd.go
+index acf4f0cb0..3215de54d 100644
+--- a/pkg/reconciler/source/crd/crd.go
++++ b/pkg/reconciler/source/crd/crd.go
+@@ -31,6 +31,7 @@ import (
+ 	"knative.dev/pkg/logging"
+ 	pkgreconciler "knative.dev/pkg/reconciler"
+ 
++	"knative.dev/eventing/pkg/apis/sources"
+ 	"knative.dev/eventing/pkg/reconciler/source/duck"
+ )
+ 
+@@ -60,6 +61,12 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, crd *v1.CustomResourceDe
+ 	//  2. Dynamically create a controller for it, if not present already. Such controller is in charge of reconciling
+ 	//     duckv1.Source resources with that particular GVR..
+ 
++	filterFunc := pkgreconciler.LabelFilterFunc(sources.SourceDuckLabelKey, sources.SourceDuckLabelValue, false)
++	if ok := filterFunc(crd); !ok {
++		logging.FromContext(ctx).Errorw("Passed crd does not have source duck label", zap.String("CRD", crd.Name))
++		return nil //Avoid requeuing object
++	}
++
+ 	gvr, gvk, err := r.resolveGroupVersions(crd)
+ 	if err != nil {
+ 		logging.FromContext(ctx).Errorw("Error while resolving GVR and GVK", zap.String("CRD", crd.Name), zap.Error(err))
+diff --git a/pkg/reconciler/source/crd/crd_test.go b/pkg/reconciler/source/crd/crd_test.go
+index 890a31075..70db91375 100644
+--- a/pkg/reconciler/source/crd/crd_test.go
++++ b/pkg/reconciler/source/crd/crd_test.go
+@@ -158,6 +158,23 @@ func TestAllCases(t *testing.T) {
+ 			Key: crdName,
+ 			Ctx: ctx,
+ 		},
++		{
++			Name: "crd missing duck label",
++			Objects: []runtime.Object{
++				NewCustomResourceDefinition(crdName,
++					WithCustomResourceDefinitionGroup(crdGroup),
++					WithCustomResourceDefinitionNames(apiextensionsv1.CustomResourceDefinitionNames{
++						Kind:   crdKind,
++						Plural: crdPlural,
++					}),
++					WithCustomResourceDefinitionVersions([]apiextensionsv1.CustomResourceDefinitionVersion{{
++						Name:   crdVersionServed,
++						Served: true,
++					}})),
++			},
++			Key: crdName,
++			Ctx: ctx,
++		},
+ 	}
+ 
+ 	logger := logtesting.TestLogger(t)
+@@ -184,9 +201,7 @@ func TestControllerRunning(t *testing.T) {
+ 			Name: "reconcile succeeded",
+ 			Objects: []runtime.Object{
+ 				NewCustomResourceDefinition(crdName,
+-					WithCustomResourceDefinitionLabels(map[string]string{
+-						sources.SourceDuckLabelKey: sources.SourceDuckLabelValue,
+-					}),
++					WithCustomResourceDefinitionLabels(map[string]string{sources.SourceDuckLabelKey: sources.SourceDuckLabelValue}),
+ 					WithCustomResourceDefinitionGroup(crdGroup),
+ 					WithCustomResourceDefinitionNames(apiextensionsv1.CustomResourceDefinitionNames{
+ 						Kind:   crdKind,
+-- 
+2.26.3
+
