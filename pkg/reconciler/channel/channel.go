@@ -67,6 +67,11 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, c *v1.Channel) pkgreconc
 
 	track := r.channelableTracker.TrackInNamespaceKReference(ctx, c)
 
+	// hack for 0.21 downstream to prevent SRVKE-796
+	if (c.Spec.ChannelTemplate.Kind == "KafkaChannel" && c.Spec.ChannelTemplate.APIVersion == "messaging.knative.dev/v1alpha1") {
+		c.Spec.ChannelTemplate.APIVersion = "messaging.knative.dev/v1beta1"
+	}
+
 	backingChannelObjRef := duckv1.KReference{
 		Kind:       c.Spec.ChannelTemplate.Kind,
 		APIVersion: c.Spec.ChannelTemplate.APIVersion,
