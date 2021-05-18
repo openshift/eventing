@@ -211,6 +211,12 @@ func (r *Reconciler) getChannelTemplate(ctx context.Context, b *eventingv1.Broke
 	if template == nil {
 		return nil, errors.New("failed to find channelTemplate")
 	}
+
+	// hack for 0.21 downstream to prevent SRVKE-796
+	if template.Kind == "KafkaChannel" && template.APIVersion == "messaging.knative.dev/v1alpha1" {
+		template.APIVersion = "messaging.knative.dev/v1beta1"
+	}
+
 	ref.APIVersion = template.APIVersion
 	ref.Kind = template.Kind
 
