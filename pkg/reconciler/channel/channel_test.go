@@ -187,6 +187,28 @@ func TestReconcile(t *testing.T) {
 				WithBackingChannelUnknown("BackingChannelNotConfigured", "BackingChannel has not yet been reconciled.")),
 		}},
 	}, {
+		Name: "Backing Kafka channel created",
+		Key:  testKey,
+		Objects: []runtime.Object{
+			NewChannel(channelName, testNS,
+				WithChannelTemplate(channelKafkaCRD()),
+				WithInitChannelConditions,
+				WithBackingChannelObjRef(backingKafkaChannelObjRef()),
+				WithBackingChannelReady,
+				WithChannelAddress(backingChannelHostname)),
+		},
+		WantCreates: []runtime.Object{
+			createKafkaChannel(testNS, channelName, false),
+		},
+		WantStatusUpdates: []clientgotesting.UpdateActionImpl{{
+			Object: NewChannel(channelName, testNS,
+				WithChannelTemplate(channelKafkaCRD()),
+				WithInitChannelConditions,
+				WithBackingChannelObjRef(backingKafkaChannelObjRef()),
+				WithChannelNoAddress(),
+				WithBackingChannelUnknown("BackingChannelNotConfigured", "BackingChannel has not yet been reconciled.")),
+		}},
+	}, {
 		Name: "Backing channel created with delivery",
 		Key:  testKey,
 		Objects: []runtime.Object{
@@ -329,6 +351,13 @@ func channelCRDBadGvk() metav1.TypeMeta {
 	}
 }
 
+func channelKafkaCRD() metav1.TypeMeta {
+	return metav1.TypeMeta{
+		APIVersion: "messaging.knative.dev/v1alpha1",
+		Kind:       "KafkaChannel",
+	}
+}
+
 func subscribers() []eventingduckv1.SubscriberSpec {
 	return []eventingduckv1.SubscriberSpec{{
 		UID:           "2f9b5e8e-deb6-11e8-9f32-f2801f1b9fd1",
@@ -397,6 +426,15 @@ func backingChannelObjRef() *duckv1.KReference {
 	}
 }
 
+func backingKafkaChannelObjRef() *duckv1.KReference {
+	return &duckv1.KReference{
+		APIVersion: "messaging.knative.dev/v1beta1",
+		Kind:       "KafkaChannel",
+		Namespace:  testNS,
+		Name:       channelName,
+	}
+}
+
 func createChannel(namespace, name string, ready bool) *unstructured.Unstructured {
 	var hostname string
 	var url string
@@ -434,6 +472,62 @@ func createChannel(namespace, name string, ready bool) *unstructured.Unstructure
 		Object: map[string]interface{}{
 			"apiVersion": "messaging.knative.dev/v1",
 			"kind":       "InMemoryChannel",
+			"metadata": map[string]interface{}{
+				"creationTimestamp": nil,
+				"namespace":         namespace,
+				"name":              name,
+				"ownerReferences": []interface{}{
+					map[string]interface{}{
+						"apiVersion":         "messaging.knative.dev/v1",
+						"blockOwnerDeletion": true,
+						"controller":         true,
+						"kind":               "Channel",
+						"name":               name,
+						"uid":                "",
+					},
+				},
+			},
+		},
+	}
+}
+
+func createKafkaChannel(namespace, name string, ready bool) *unstructured.Unstructured {
+	var hostname string
+	var url string
+	if ready {
+		return &unstructured.Unstructured{
+			Object: map[string]interface{}{
+				"apiVersion": "messaging.knative.dev/v1alpha1",
+				"kind":       "KafkaChannel",
+				"metadata": map[string]interface{}{
+					"creationTimestamp": nil,
+					"namespace":         namespace,
+					"name":              name,
+					"ownerReferences": []interface{}{
+						map[string]interface{}{
+							"apiVersion":         "messaging.knative.dev/v1",
+							"blockOwnerDeletion": true,
+							"controller":         true,
+							"kind":               "Channel",
+							"name":               name,
+							"uid":                "",
+						},
+					},
+				},
+				"status": map[string]interface{}{
+					"address": map[string]interface{}{
+						"hostname": hostname,
+						"url":      url,
+					},
+				},
+			},
+		}
+	}
+
+	return &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "messaging.knative.dev/v1beta1",
+			"kind":       "KafkaChannel",
 			"metadata": map[string]interface{}{
 				"creationTimestamp": nil,
 				"namespace":         namespace,
