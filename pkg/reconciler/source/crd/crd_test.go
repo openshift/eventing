@@ -154,6 +154,23 @@ func TestAllCases(t *testing.T) {
 			Key: crdName,
 			Ctx: ctx,
 		},
+		{
+			Name: "crd missing duck label",
+			Objects: []runtime.Object{
+				NewCustomResourceDefinition(crdName,
+					WithCustomResourceDefinitionGroup(crdGroup),
+					WithCustomResourceDefinitionNames(apiextensionsv1.CustomResourceDefinitionNames{
+						Kind:   crdKind,
+						Plural: crdPlural,
+					}),
+					WithCustomResourceDefinitionVersions([]apiextensionsv1.CustomResourceDefinitionVersion{{
+						Name:   crdVersionServed,
+						Served: true,
+					}})),
+			},
+			Key: crdName,
+			Ctx: ctx,
+		},
 	}
 
 	logger := logtesting.TestLogger(t)
@@ -180,9 +197,7 @@ func TestControllerRunning(t *testing.T) {
 			Name: "reconcile succeeded",
 			Objects: []runtime.Object{
 				NewCustomResourceDefinition(crdName,
-					WithCustomResourceDefinitionLabels(map[string]string{
-						sources.SourceDuckLabelKey: sources.SourceDuckLabelValue,
-					}),
+					WithCustomResourceDefinitionLabels(map[string]string{sources.SourceDuckLabelKey: sources.SourceDuckLabelValue}),
 					WithCustomResourceDefinitionGroup(crdGroup),
 					WithCustomResourceDefinitionNames(apiextensionsv1.CustomResourceDefinitionNames{
 						Kind:   crdKind,
