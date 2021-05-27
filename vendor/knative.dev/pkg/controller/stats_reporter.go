@@ -197,7 +197,7 @@ func (r *reporter) ReportReconcile(duration time.Duration, success string, key t
 		return err
 	}
 
-	metrics.RecordBatch(ctx, reconcileCountStat.M(1),
-		reconcileLatencyStat.M(duration.Milliseconds()))
+	// TODO skonto: fix latency histogram
+	metrics.RecordBatch(ctx, reconcileCountStat.M(1))
 	return nil
 }

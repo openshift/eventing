@@ -26,8 +26,8 @@ import (
 
 const (
 	defaultConfigFilename = "config.toml"
-	servingEnvName        = "EVENTING_UPGRADE_TESTS_SERVING_USE"
-	configFilenameEnvName = "EVENTING_UPGRADE_TESTS_CONFIGFILENAME"
+	servingEnvName        = "E2E_UPGRADE_TESTS_SERVING_USE"
+	configFilenameEnvName = "E2E_UPGRADE_TESTS_CONFIGFILENAME"
 )
 
 func TestNewConfig(t *testing.T) {
@@ -48,12 +48,12 @@ func TestNewConfig(t *testing.T) {
 
 			if s.panics {
 				assert.Panics(t, func() {
-					prober.NewConfig()
+					prober.NewConfig("test-ns")
 				})
 				return
 			}
 
-			config := prober.NewConfig()
+			config := prober.NewConfig("test-ns")
 
 			assert.Equal(t, s.servingUse, config.Serving.Use)
 			assert.True(t, config.Serving.ScaleToZero)

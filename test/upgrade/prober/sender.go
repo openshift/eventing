@@ -16,8 +16,10 @@
 package prober
 
 import (
+	"context"
 	"fmt"
 
+	"github.com/wavesoftware/go-ensure"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -27,13 +29,13 @@ import (
 
 var senderName = "wathola-sender"
 
-func (p *prober) deploySender() {
+func (p *prober) deploySender(ctx context.Context) {
 	p.log.Info("Deploy sender deployment: ", senderName)
 	var replicas int32 = 1
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      senderName,
-			Namespace: p.client.Namespace,
+			Namespace: p.config.Namespace,
 		},
 		Spec: appsv1.DeploymentSpec{
 			Replicas: &replicas,
@@ -61,7 +63,7 @@ func (p *prober) deploySender() {
 					}},
 					Containers: []corev1.Container{{
 						Name:  "sender",
-						Image: p.config.ImageResolver(senderName),
+						Image: pkgTest.ImagePath(senderName),
 						VolumeMounts: []corev1.VolumeMount{{
 							Name:      p.config.ConfigMapName,
 							ReadOnly:  true,
@@ -75,21 +77,21 @@ func (p *prober) deploySender() {
 
 	_, err := p.client.Kube.AppsV1().
 		Deployments(p.client.Namespace).
-		Create(p.config.Ctx, deployment, metav1.CreateOptions{})
-	p.ensureNoError(err)
+		Create(ctx, deployment, metav1.CreateOptions{})
+	ensure.NoError(err)
 
 	testlib.WaitFor(fmt.Sprint("sender deployment be ready: ", senderName), func() error {
 		return pkgTest.WaitForDeploymentScale(
-			p.config.Ctx, p.client.Kube, senderName, p.client.Namespace, int(replicas),
+			ctx, p.client.Kube, senderName, p.client.Namespace, int(replicas),
 		)
 	})
 }
 
-func (p *prober) removeSender() {
+func (p *prober) removeSender(ctx context.Context) {
 	p.log.Info("Remove of sender deployment: ", senderName)
 
 	err := p.client.Kube.AppsV1().
 		Deployments(p.client.Namespace).
-		Delete(p.config.Ctx, senderName, metav1.DeleteOptions{})
-	p.ensureNoError(err)
+		Delete(ctx, senderName, metav1.DeleteOptions{})
+	ensure.NoError(err)
 }

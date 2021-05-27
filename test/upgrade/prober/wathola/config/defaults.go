@@ -62,7 +62,7 @@ func defaultValues() *Config {
 				Duration: time.Second,
 			},
 			Errors: ReceiverErrorConfig{
-				UnavailablePeriodToReport: time.Minute,
+				UnavailablePeriodToReport: 5 * time.Second,
 			},
 		},
 		Forwarder: ForwarderConfig{
@@ -79,6 +79,6 @@ func defaultValues() *Config {
 			Message: "OK",
 			Status:  nethttp.StatusOK,
 		},
-		LogLevel: zap.InfoLevel.String(),
+		LogLevel: zap.InfoLevel,
 	}
 }

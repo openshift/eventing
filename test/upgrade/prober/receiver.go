@@ -16,8 +16,10 @@
 package prober
 
 import (
+	"context"
 	"fmt"
 
+	"github.com/wavesoftware/go-ensure"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -28,32 +30,36 @@ import (
 )
 
 var (
-	receiverName = "wathola-receiver"
+	receiverName           = "wathola-receiver"
+	receiverNodePort int32 = -1
 )
 
-func (p *prober) deployReceiver() {
-	p.deployReceiverDeployment()
-	p.deployReceiverService()
+func (p *prober) deployReceiver(ctx context.Context) {
+	p.deployReceiverDeployment(ctx)
+	p.deployReceiverService(ctx)
 }
 
-func (p *prober) deployReceiverDeployment() {
+func (p *prober) deployReceiverDeployment(ctx context.Context) {
 	p.log.Info("Deploy of receiver deployment: ", receiverName)
 	deployment := p.createReceiverDeployment()
-	p.client.CreateDeploymentOrFail(deployment)
+	_, err := p.client.Kube.AppsV1().
+		Deployments(deployment.Namespace).
+		Create(ctx, deployment, metav1.CreateOptions{})
+	ensure.NoError(err)
 
 	testlib.WaitFor(fmt.Sprint("receiver deployment be ready: ", receiverName), func() error {
 		return pkgTest.WaitForDeploymentScale(
-			p.config.Ctx, p.client.Kube, receiverName, p.client.Namespace, 1,
+			ctx, p.client.Kube, receiverName, p.client.Namespace, 1,
 		)
 	})
 }
 
-func (p *prober) deployReceiverService() {
+func (p *prober) deployReceiverService(ctx context.Context) {
 	p.log.Infof("Deploy of receiver service: %v", receiverName)
 	service := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      receiverName,
-			Namespace: p.client.Namespace,
+			Namespace: p.config.Namespace,
 		},
 		Spec: corev1.ServiceSpec{
 			Ports: []corev1.ServicePort{
@@ -70,10 +76,22 @@ func (p *prober) deployReceiverService() {
 			Selector: map[string]string{
 				"app": receiverName,
 			},
-			Type: corev1.ServiceTypeClusterIP,
+			Type: corev1.ServiceTypeNodePort,
 		},
 	}
-	p.client.CreateServiceOrFail(service)
+	created, err := p.client.Kube.CoreV1().Services(p.config.Namespace).
+		Create(ctx, service, metav1.CreateOptions{})
+	ensure.NoError(err)
+	for _, portSpec := range created.Spec.Ports {
+		if portSpec.Port == 80 {
+			receiverNodePort = portSpec.NodePort
+		}
+	}
+	if receiverNodePort == -1 {
+		panic(fmt.Errorf("couldn't find a node port for service: %v", receiverName))
+	} else {
+		p.log.Debugf("Node port for service: %v is %v", receiverName, receiverNodePort)
+	}
 }
 
 func (p *prober) createReceiverDeployment() *appsv1.Deployment {
@@ -81,7 +99,7 @@ func (p *prober) createReceiverDeployment() *appsv1.Deployment {
 	return &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      receiverName,
-			Namespace: p.client.Namespace,
+			Namespace: p.config.Namespace,
 		},
 		Spec: appsv1.DeploymentSpec{
 			Replicas: &replicas,
@@ -109,7 +127,7 @@ func (p *prober) createReceiverDeployment() *appsv1.Deployment {
 					}},
 					Containers: []corev1.Container{{
 						Name:  "receiver",
-						Image: p.config.ImageResolver(receiverName),
+						Image: pkgTest.ImagePath(receiverName),
 						VolumeMounts: []corev1.VolumeMount{{
 							Name:      p.config.ConfigMapName,
 							ReadOnly:  true,

@@ -23,9 +23,9 @@ import (
 
 const (
 	// StepType is a string type representation of step event
-	StepType = "dev.knative.eventing.wathola.step"
+	StepType = "com.github.cardil.wathola.step"
 	// FinishedType os a string type representation of finished event
-	FinishedType = "dev.knative.eventing.wathola.finished"
+	FinishedType = "com.github.cardil.wathola.finished"
 )
 
 // Step is a event call at each step of verification

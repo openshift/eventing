@@ -1,6 +1,6 @@
-# logLevel = 'DEBUG'
+# logLevel = 5 # DEBUG(5)
 [sender]
-address = '{{- .Endpoint -}}'
+address = '{{- .BrokerURL -}}'
 interval = {{ .Config.Interval.Nanoseconds }}
 [forwarder]
-target = 'http://wathola-receiver.{{- .Namespace -}}.svc.cluster.local'
+target = 'http://wathola-receiver.{{- .Config.Namespace -}}.svc.cluster.local'
