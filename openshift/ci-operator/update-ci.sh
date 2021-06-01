@@ -19,7 +19,7 @@ EOF
 
 # Deduce branch name and X.Y.Z version.
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
-VERSION=$(echo $BRANCH | sed -E 's/^.*(v[0-9]+\.[0-9]+\.[0-9]+|next)|.*/\1/')
+VERSION=$(echo $BRANCH | sed -E 's/^.*(v[0-9]+\.[0-9]+|next)|.*/\1/')
 test -n "$VERSION" || fail "'$BRANCH' is not a release branch"
 
 # Set up variables for important locations in the openshift/release repo.

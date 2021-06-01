@@ -19,7 +19,7 @@ promotion:
   disabled: $promotion_disabled
   cluster: https://api.ci.openshift.org
   namespace: openshift
-  name: $branch
+  name: $branch.0
 base_images:
   base:
     name: '$openshift'
