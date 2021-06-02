@@ -31,7 +31,7 @@ if [ -z "$UPSTREAM_BRANCH" ]; then
 fi
 echo "found upstream branch: $UPSTREAM_BRANCH"
 readonly UPSTREAM_TAG="v$UPSTREAM_BRANCH.0"
-readonly MIDSTREAM_BRANCH="release-v$UPSTREAM_BRANCH.0"
+readonly MIDSTREAM_BRANCH="release-v$UPSTREAM_BRANCH"
 openshift/release/create-release-branch.sh "$UPSTREAM_TAG" "$MIDSTREAM_BRANCH"
 # we would check the error code, but we 'set -e', so assume we're fine
 git push openshift "$MIDSTREAM_BRANCH"
