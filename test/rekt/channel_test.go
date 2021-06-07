@@ -192,6 +192,7 @@ EventSource ---> Channel ---> Subscription ---> Channel ---> Subscription ----> 
                                    -----------> Service(Transformation)
 */
 func TestEventTransformationForSubscriptionV1(t *testing.T) {
+	t.Skip("skipping for now...")
 	t.Parallel()
 
 	ctx, env := global.Environment(
