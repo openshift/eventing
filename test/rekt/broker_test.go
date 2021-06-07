@@ -111,6 +111,7 @@ func TestBrokerWithFlakyDLQ(t *testing.T) {
 
 // TestBrokerConformance
 func TestBrokerConformance(t *testing.T) {
+	t.Skip("skip for now...")
 	ctx, env := global.Environment(
 		knative.WithKnativeNamespace(system.Namespace()),
 		knative.WithLoggingConfig,
