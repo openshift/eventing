@@ -192,7 +192,7 @@ function run_e2e_rekt_tests(){
   wait_until_pods_running $EVENTING_NAMESPACE || return 2
 
 
-  go_test_e2e -timeout=30m -parallel=20 ./test/rekt || failed=$?
+  go_test_e2e -timeout=30m -parallel=1 ./test/rekt || failed=$?
   return $failed
 }
 
