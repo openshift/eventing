@@ -43,6 +43,7 @@ tests:
       resources:
         requests:
           cpu: 100m
+      timeout: 4h0m0s
     workflow: ipi-aws
 - as: conformance-aws-ocp-${openshift//./}
   steps:
@@ -55,6 +56,7 @@ tests:
       resources:
         requests:
           cpu: 100m
+      timeout: 4h0m0s
     workflow: ipi-aws
 - as: reconciler-aws-ocp-${openshift//./}
   steps:
@@ -67,6 +69,7 @@ tests:
       resources:
         requests:
           cpu: 100m
+      timeout: 4h0m0s
     workflow: ipi-aws
 - as: e2e-aws-ocp-${openshift//./}-continuous
   cron: 0 */12 * * 1-5
@@ -80,6 +83,7 @@ tests:
       resources:
         requests:
           cpu: 100m
+      timeout: 4h0m0s
     workflow: ipi-aws
 resources:
   '*':
