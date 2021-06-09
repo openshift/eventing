@@ -3429,7 +3429,7 @@ spec:
         - name: WEBHOOK_PORT
           value: "8443"
         - name: SINK_BINDING_SELECTION_MODE
-          value: "exclusion"
+          value: "inclusion"
         - name: POD_NAME
           valueFrom:
             fieldRef:
@@ -3726,45 +3726,6 @@ metadata:
 data:
   MaxIdleConnections: "1000"
   MaxIdleConnectionsPerHost: "100"
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: config-observability
-  namespace: knative-eventing
-  labels:
-    eventing.knative.dev/release: devel
-    knative.dev/config-propagation: original
-    knative.dev/config-category: eventing
-  annotations:
-    knative.dev/example-checksum: "f46cf09d"
-data:
-  _example: |
-    metrics.backend-destination: prometheus
-    metrics.request-metrics-backend-destination: prometheus
-    metrics.stackdriver-project-id: "<your stackdriver project id>"
-    metrics.allow-stackdriver-custom-metrics: "false"
-    profiling.enable: "false"
-    sink-event-error-reporting.enable: "false"
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: config-tracing
-  namespace: knative-eventing
-  labels:
-    eventing.knative.dev/release: devel
-    knative.dev/config-propagation: original
-    knative.dev/config-category: eventing
-  annotations:
-    knative.dev/example-checksum: "4002b4c2"
-data:
-  _example: |
-    backend: "none"
-    zipkin-endpoint: "http://zipkin.istio-system.svc.cluster.local:9411/api/v2/spans"
-    stackdriver-project-id: "my-project"
-    debug: "false"
-    sample-rate: "0.1"
 ---
 apiVersion: apps/v1
 kind: Deployment
