@@ -632,6 +632,12 @@ rules:
       - "watch"
       - "patch"
   - apiGroups:
+      - ""
+    resources:
+      - "namespaces/finalizers"
+    verbs:
+      - "update"
+  - apiGroups:
       - "apps"
     resources:
       - "deployments"
