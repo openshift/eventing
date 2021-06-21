@@ -24,7 +24,7 @@ spec:
   restartPolicy: "Never"
   containers:
     - name: eventshub
-      image: ko://knative.dev/reconciler-test/cmd/eventshub
+      image: registry.ci.openshift.org/openshift/knative-nightly:knative-eventing-test-eventshub
       imagePullPolicy: "IfNotPresent"
       env:
         - name: "SYSTEM_NAMESPACE"
