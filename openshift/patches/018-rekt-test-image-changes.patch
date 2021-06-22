@@ -1,0 +1,112 @@
+diff --git a/test/rekt/broker_test.go b/test/rekt/broker_test.go
+index 2f13b88de..53a92020c 100644
+--- a/test/rekt/broker_test.go
++++ b/test/rekt/broker_test.go
+@@ -54,6 +54,7 @@ func TestBrokerAsMiddleware(t *testing.T) {
+ 
+ // TestBrokerDLQ
+ func TestBrokerWithDLQ(t *testing.T) {
++	t.Skip("skipping for test reasons...")
+ 	class := eventing.MTChannelBrokerClassValue
+ 
+ 	ctx, env := global.Environment(
+diff --git a/test/rekt/resources/containersource/containersource.yaml b/test/rekt/resources/containersource/containersource.yaml
+index f480b459b..51ebb5c82 100644
+--- a/test/rekt/resources/containersource/containersource.yaml
++++ b/test/rekt/resources/containersource/containersource.yaml
+@@ -42,7 +42,7 @@ spec:
+     spec:
+       containers:
+       - name: heartbeats
+-        image: ko://knative.dev/eventing/test/test_images/heartbeats
++        image: registry.ci.openshift.org/openshift/knative-nightly:knative-eventing-test-heartbeats
+         args:
+         - --period=1
+         env:
+diff --git a/test/rekt/resources/containersource/containersource_test.go b/test/rekt/resources/containersource/containersource_test.go
+index 501541bca..c2b81583a 100644
+--- a/test/rekt/resources/containersource/containersource_test.go
++++ b/test/rekt/resources/containersource/containersource_test.go
+@@ -47,7 +47,7 @@ func Example_min() {
+ 	//     spec:
+ 	//       containers:
+ 	//       - name: heartbeats
+-	//         image: ko://knative.dev/eventing/test/test_images/heartbeats
++	//         image: registry.ci.openshift.org/openshift/knative-nightly:knative-eventing-test-heartbeats
+ 	//         args:
+ 	//         - --period=1
+ 	//         env:
+@@ -106,7 +106,7 @@ func Example_full() {
+ 	//     spec:
+ 	//       containers:
+ 	//       - name: heartbeats
+-	//         image: ko://knative.dev/eventing/test/test_images/heartbeats
++	//         image: registry.ci.openshift.org/openshift/knative-nightly:knative-eventing-test-heartbeats
+ 	//         args:
+ 	//         - --period=1
+ 	//         env:
+diff --git a/test/rekt/resources/eventlibrary/eventlibrary.yaml b/test/rekt/resources/eventlibrary/eventlibrary.yaml
+index 7cd5e8e57..96777f69f 100644
+--- a/test/rekt/resources/eventlibrary/eventlibrary.yaml
++++ b/test/rekt/resources/eventlibrary/eventlibrary.yaml
+@@ -23,7 +23,7 @@ spec:
+   restartPolicy: "Never"
+   containers:
+     - name: library
+-      image: ko://knative.dev/eventing/test/test_images/event-library
++      image: registry.ci.openshift.org/openshift/knative-nightly:knative-eventing-test-event-library
+       imagePullPolicy: "IfNotPresent"
+ 
+ ---
+diff --git a/test/rekt/resources/eventlibrary/eventlibrary_test.go b/test/rekt/resources/eventlibrary/eventlibrary_test.go
+index 0e1464ddf..fe3b19c2e 100644
+--- a/test/rekt/resources/eventlibrary/eventlibrary_test.go
++++ b/test/rekt/resources/eventlibrary/eventlibrary_test.go
+@@ -24,7 +24,7 @@ import (
+ 
+ func Example() {
+ 	images := map[string]string{
+-		"ko://knative.dev/eventing/test/test_images/event-library": "gcr.io/knative-samples/helloworld-go",
++		"registry.ci.openshift.org/openshift/knative-nightly:knative-eventing-test-event-library": "gcr.io/knative-samples/helloworld-go",
+ 	}
+ 	cfg := map[string]interface{}{
+ 		"name":      "foo",
+diff --git a/test/rekt/resources/flaker/flaker.yaml b/test/rekt/resources/flaker/flaker.yaml
+index 207c3d681..8821bb577 100644
+--- a/test/rekt/resources/flaker/flaker.yaml
++++ b/test/rekt/resources/flaker/flaker.yaml
+@@ -23,7 +23,7 @@ spec:
+   restartPolicy: "Never"
+   containers:
+     - name: flaker
+-      image: ko://knative.dev/eventing/test/test_images/event-flaker
++      image: registry.ci.openshift.org/openshift/knative-nightly:knative-eventing-test-event-flaker
+       imagePullPolicy: "IfNotPresent"
+       env:
+         - name: "K_SINK"
+diff --git a/test/rekt/resources/flaker/flaker_test.go b/test/rekt/resources/flaker/flaker_test.go
+index aee4d23c2..3d797342a 100644
+--- a/test/rekt/resources/flaker/flaker_test.go
++++ b/test/rekt/resources/flaker/flaker_test.go
+@@ -24,7 +24,7 @@ import (
+ 
+ func Example() {
+ 	images := map[string]string{
+-		"ko://knative.dev/eventing/test/test_images/event-flaker": "gcr.io/knative-samples/helloworld-go",
++		"registry.ci.openshift.org/openshift/knative-nightly:knative-eventing-test-event-flaker": "gcr.io/knative-samples/helloworld-go",
+ 	}
+ 	cfg := map[string]interface{}{
+ 		"name":      "foo",
+diff --git a/vendor/knative.dev/reconciler-test/pkg/eventshub/103-pod.yaml b/vendor/knative.dev/reconciler-test/pkg/eventshub/103-pod.yaml
+index fdf1bfe80..121012453 100644
+--- a/vendor/knative.dev/reconciler-test/pkg/eventshub/103-pod.yaml
++++ b/vendor/knative.dev/reconciler-test/pkg/eventshub/103-pod.yaml
+@@ -24,7 +24,7 @@ spec:
+   restartPolicy: "Never"
+   containers:
+     - name: eventshub
+-      image: ko://knative.dev/reconciler-test/cmd/eventshub
++      image: registry.ci.openshift.org/openshift/knative-nightly:knative-eventing-test-eventshub
+       imagePullPolicy: "IfNotPresent"
+       env:
+         - name: "SYSTEM_NAMESPACE"
