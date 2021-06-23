@@ -31,6 +31,7 @@ import (
 	"knative.dev/pkg/logging"
 	pkgreconciler "knative.dev/pkg/reconciler"
 
+	"knative.dev/eventing/pkg/apis/sources"
 	"knative.dev/eventing/pkg/reconciler/source/duck"
 )
 
@@ -59,6 +60,12 @@ func (r *Reconciler) ReconcileKind(ctx context.Context, crd *v1.CustomResourceDe
 	// 	1. Resolve GVR and GVK from a particular Source CRD (i.e., those labeled with duck.knative.dev/source = "true")
 	//  2. Dynamically create a controller for it, if not present already. Such controller is in charge of reconciling
 	//     duckv1.Source resources with that particular GVR..
+
+	filterFunc := pkgreconciler.LabelFilterFunc(sources.SourceDuckLabelKey, sources.SourceDuckLabelValue, false)
+	if ok := filterFunc(crd); !ok {
+		logging.FromContext(ctx).Errorw("Passed crd does not have source duck label", zap.String("CRD", crd.Name))
+		return nil //Avoid requeuing object
+	}
 
 	gvr, gvk, err := r.resolveGroupVersions(crd)
 	if err != nil {
