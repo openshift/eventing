@@ -7,8 +7,8 @@
 set -ex
 readonly TMPDIR=$(mktemp -d knativeEventingBranchingCheckXXXX -p /tmp/)
 
-git fetch upstream
-git fetch openshift
+git fetch upstream --tags
+git fetch openshift --tags
 
 # We need to seed this with a few releases that, otherwise, would make
 # the processing regex less clear with more anomalies
@@ -18,7 +18,7 @@ cat >> "$TMPDIR"/midstream_branches <<EOF
 EOF
 
 git branch --list -a "upstream/release-0.*" | cut -f3 -d'/' | cut -f2 -d'-' > "$TMPDIR"/upstream_branches
-git branch --list -a "openshift/release-v0.*" | cut -f3 -d'/' | cut -f2 -d'v' | rev | cut -f2- -d'.' | rev >> "$TMPDIR"/midstream_branches
+git branch --list -a "openshift/release-v0.*" | cut -f3 -d'/' | cut -f2 -d'v' | cut -f1,2 -d'.' >> "$TMPDIR"/midstream_branches
 
 sort -o "$TMPDIR"/midstream_branches "$TMPDIR"/midstream_branches
 sort -o "$TMPDIR"/upstream_branches "$TMPDIR"/upstream_branches
