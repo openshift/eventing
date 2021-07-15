@@ -22,7 +22,12 @@ git add openshift OWNERS_ALIASES OWNERS Makefile
 git commit -m ":open_file_folder: Update openshift specific files."
 
 # Apply patches .
-git apply openshift/patches/*
+for p in openshift/patches/*
+do
+ echo "Applying patch $p"
+ git apply -v $p
+done
+
 make RELEASE=ci generate-release
 git commit -am ":fire: Apply carried patches."
 
